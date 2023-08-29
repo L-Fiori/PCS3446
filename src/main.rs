@@ -1,29 +1,32 @@
-struct Event<T> {
-    value: T,
-    next: Option<Box<Event<T>>>,
+#[derive(Debug)]
+pub struct Event {
+    time: i32,
+    name: String,
+    next: Option<Box<Event>>,
 }
 
-pub struct EventList<T> {
-    head: Option<Box<Event<T>>>,
+pub struct EventList {
+    head: Option<Box<Event>>,
 }
 
-impl<T> EventList<T> {
+impl EventList {
     pub fn new() -> Self {
         // todo: Change none to the start event
         EventList { head: None }
     }
 
     // Add a new event to the event list
-    pub fn push(&mut self, value: T) {
+    pub fn push(&mut self, time: i32, name: String) {
         let new_event = Box::new(Event {
-            value,
+            time,
+            name,
             next: self.head.take(),
         });
         self.head = Some(new_event);
     }
 
     // Get an iterator over the event list
-    pub fn iter(&self) -> EventListIter<T> {
+    pub fn iter(&self) -> EventListIter {
         EventListIter {
             current: self.head.as_ref().map(|event| &**event),
         }
@@ -31,26 +34,25 @@ impl<T> EventList<T> {
 }
 
 // Define an iterator for the event list
-pub struct EventListIter<'a, T> {
-    current: Option<&'a Event<T>>,
+pub struct EventListIter<'a> {
+    current: Option<&'a Event>,
 }
 
-impl<'a, T> Iterator for EventListIter<'a, T> {
-    type Item = &'a T;
+impl<'a> Iterator for EventListIter<'a> {
+    type Item = &'a Event; 
 
     fn next(&mut self) -> Option<Self::Item> {
         self.current.map(|event| {
             self.current = event.next.as_ref().map(|event| &**event);
-            &event.value
+            event
         })
     }
 }
 
 fn main() {
     let mut list = EventList::new();
-    list.push((1, "one"));
-    list.push((2, "two"));
-    list.push((3, "three"));
+    list.push(0, String::from("Partida"));
+    list.push(999, String::from("Encerramento"));
 
     for item in list.iter() {
         println!("{:?}", item);
