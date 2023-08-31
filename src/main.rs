@@ -31,6 +31,13 @@ impl EventList {
             current: self.head.as_ref().map(|event| &**event),
         }
     }
+
+    // Pops the event list
+    pub fn pop_event(&self) -> Option<&Event> {
+        // todo: rn it only retrieves the event,
+        // it has to pop it.
+        self.head.as_ref().map(|event| &**event)
+    }
 }
 
 // Define an iterator for the event list
@@ -50,11 +57,11 @@ impl<'a> Iterator for EventListIter<'a> {
 }
 
 fn main() {
-    let mut list = EventList::new();
-    list.push(0, String::from("Partida"));
-    list.push(999, String::from("Encerramento"));
+    let mut event_list = EventList::new();
+    event_list.push(999, String::from("Encerramento"));
+    event_list.push(0, String::from("Partida"));
 
-    for item in list.iter() {
+    for item in event_list.iter() {
         println!("{:?}", item);
     }
 }    
