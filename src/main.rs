@@ -60,12 +60,62 @@ impl<'a, T> Iterator for EventListIter<'a, T> {
 }
 
 fn main() {
-    let mut event_list: EventList<Option<i32>> = EventList::new();
-    event_list.push(999, String::from("Encerramento"), None);
-    event_list.push(0, String::from("Partida"), None);
+}
 
-    for item in event_list.iter() {
-        println!("{:?}", item);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_push_empty_list() {
+        // Create an empty event list
+        let mut event_list: EventList<Option<i32>> = EventList::new();
+
+        // Push an event
+        event_list.push(999, String::from("Encerramento"), None);
+
+        // Assert the event list has the correct length
+        assert_eq!(event_list.iter().count(), 1);
     }
-}    
 
+    #[test]
+    fn test_push_multiple_events() {
+        // Create an empty event list
+        let mut event_list: EventList<Option<i32>> = EventList::new();
+
+        // Push multiple events
+        event_list.push(999, String::from("Encerramento"), None);
+        event_list.push(0, String::from("Partida"), None);
+
+        // Assert the event list has the correct length
+        assert_eq!(event_list.iter().count(), 2);
+    }
+
+    #[test]
+    fn test_iter_empty_list() {
+        // Create an empty event list
+        let event_list: EventList<Option<i32>> = EventList::new();
+
+        // Iterate over the list and collect items
+        let events: Vec<_> = event_list.iter().collect();
+
+        // Assert that there are no events in the collected vector
+        assert_eq!(events.len(), 0);
+    }
+
+    #[test]
+    fn test_iter_multiple_events() {
+        // Create an event list with events
+        let mut event_list: EventList<Option<i32>> = EventList::new();
+        event_list.push(999, String::from("Encerramento"), None);
+        event_list.push(0, String::from("Partida"), None);
+
+        // Iterate over the list and collect items
+        let events: Vec<_> = event_list.iter().collect();
+
+        // Assert that the collected events match the expected names
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].name, "Partida");
+        assert_eq!(events[1].name, "Encerramento");
+    }
+}
