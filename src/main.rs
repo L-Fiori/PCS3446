@@ -33,10 +33,11 @@ impl EventList {
     }
 
     // Pops the event list
-    pub fn pop_event(&self) -> Option<&Event> {
-        // todo: rn it only retrieves the event,
-        // it has to pop it.
-        self.head.as_ref().map(|event| &**event)
+    pub fn pop(&mut self) -> Option<Box<Event>> {
+        self.head.take().map(|mut old_head| {
+            self.head = old_head.next.take();
+            old_head
+            })
     }
 }
 
