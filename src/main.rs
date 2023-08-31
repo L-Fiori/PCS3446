@@ -118,4 +118,32 @@ mod tests {
         assert_eq!(events[0].name, "Partida");
         assert_eq!(events[1].name, "Encerramento");
     }
+
+    #[test]
+    fn test_pop_empty_list() {
+        // Create an empty event list
+        let mut event_list: EventList<Option<i32>> = EventList::new();
+
+        // Try to pop an event from the list
+        let popped_event = event_list.pop();
+
+        // Assert that the result is None
+        assert!(popped_event.is_none());
+    }
+
+    #[test]
+    fn test_pop_multiple_events() {
+        // Create an event list with events
+        let mut event_list: EventList<Option<i32>> = EventList::new();
+        event_list.push(999, String::from("Encerramento"), None);
+        event_list.push(0, String::from("Partida"), None);
+
+        // Pop events from the list
+        let popped_event1 = event_list.pop();
+        let popped_event2 = event_list.pop();
+
+        // Assert that the popped events have the correct names
+        assert_eq!(popped_event1.unwrap().name, "Partida");
+        assert_eq!(popped_event2.unwrap().name, "Encerramento");
+    }
 }
