@@ -12,7 +12,6 @@ pub struct EventList<T> {
 
 impl<T> EventList<T> {
     pub fn new() -> Self {
-        // todo: Change none to the start event
         EventList { head: None }
     }
 
@@ -60,6 +59,31 @@ impl<'a, T> Iterator for EventListIter<'a, T> {
 }
 
 fn main() {
+}
+
+fn event_loop(event_list: EventList<T>) {
+    // first it'll be implemented a single iteration of
+    // the loop.
+
+    // Extract the first event of the list
+    let event = event_list.pop();
+
+    // Unpack the event's elements
+    let time = event.unwrap().time;
+    let name = event.unwrap().name;
+    let metadata = event.unwrap().metadata;
+
+    // Generate event log
+    // todo: create a better log interface and a real log file
+    println!("Event name: {}", name);
+    println!("Event time: {}", time);
+    println!("Event metadata: {}", metadata);
+
+    // Select the function which will handle the event
+    let routine = select_routine();
+
+    // Execute the function
+    exec_routine(routine);
 }
 
 #[cfg(test)]
