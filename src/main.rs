@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub struct Event<T> {
     time: i32,
@@ -61,7 +63,22 @@ impl<'a, T> Iterator for EventListIter<'a, T> {
 fn main() {
 }
 
-fn event_loop(event_list: EventList<T>) {
+fn select_routine<'a>(event_to_routine: &'a HashMap<&'a str, &'a str>, event_name: &'a str) -> &'a str {
+    event_to_routine.get(event_name)
+}
+
+trait RunRoutine {
+    fn run(&self);
+}
+
+struct RoutineA;
+impl RunRoutine for RoutineA {
+    fn run(&self) {
+        println!("Routine A is running!");
+    }
+}
+
+fn event_loop<T> (event_list: EventList<T>) {
     // first it'll be implemented a single iteration of
     // the loop.
 
@@ -83,7 +100,7 @@ fn event_loop(event_list: EventList<T>) {
     let routine = select_routine();
 
     // Execute the function
-    exec_routine(routine);
+    routine.run();
 }
 
 #[cfg(test)]
