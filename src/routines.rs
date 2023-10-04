@@ -31,3 +31,13 @@ pub fn create_routine(routine: &str) -> Box<dyn Runnable> {
         _ => Box::new(DefaultRoutine), // Handle unknown routines
     }
 }
+
+pub fn create_event_to_routine() -> HashMap<&'static str, &'static str> {
+    // Create an empty HashMap
+    let mut event_to_routine = HashMap::new();
+
+    // Insert key-value pairs into the HashMap
+    event_to_routine.insert("EventA", "RoutineA");
+
+    event_to_routine
+}

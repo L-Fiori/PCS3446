@@ -40,6 +40,13 @@ impl<T> EventList<T> {
             old_head
             })
     }
+
+    // Push an event back into the event list
+    pub fn push_back(&mut self, event: Event<T>) {
+        let mut new_event = Box::new(event);
+        new_event.next = self.head.take();
+        self.head = Some(new_event);
+    }
 }
 
 // Define an iterator for the event list
