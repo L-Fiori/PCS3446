@@ -8,7 +8,7 @@ use PCS3446::populate_list::populate_list;
 
 fn main() {
     // Define the number of timesteps and the time delay in milliseconds
-    let num_timesteps = 9;
+    let num_timesteps = 1000;
     let timestep_duration_ms = 100;
 
     // Initialize the current timestep and a start time
@@ -50,9 +50,11 @@ fn main() {
     }
 }
 
-fn process_current_timestep<T>(event_list: &mut EventList<T>, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> i32 {
+fn process_current_timestep<T: std::fmt::Debug>(event_list: &mut EventList<T>, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> i32 {
     // Your code for processing the current timestep goes here
     println!("Instante de simulacao: {}", timestep);
+    // println!("Event list: {:?}", event_list);
+    //println!("Hashmap: {:?}", event_to_routine);
 
     if let Some(new_timestep) = event_loop(event_list, event_to_routine, timestep) {
         new_timestep

@@ -2,7 +2,7 @@ use crate::event_list::EventList;
 use crate::routines::{select_routine, create_routine};
 use std::collections::HashMap;
 
-pub fn event_loop<T> (event_list: &mut EventList<T>, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> Option<i32> {
+pub fn event_loop<T: std::fmt::Debug> (event_list: &mut EventList<T>, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> Option<i32> {
 
     let mut continue_processing = true;
 
@@ -13,7 +13,7 @@ pub fn event_loop<T> (event_list: &mut EventList<T>, event_to_routine: &HashMap<
             let name = &event.name;
             let _metadata = &event.metadata;
 
-            if time >= timestep {
+            if time > timestep {
                 event_list.push_back(*event);
                 return Some(time);
             }

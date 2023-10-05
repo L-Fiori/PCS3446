@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Event<T> {
     pub time: i32,
     pub name: String,
@@ -6,6 +6,7 @@ pub struct Event<T> {
     pub next: Option<Box<Event<T>>>,
 }
 
+#[derive(Debug)]
 pub struct EventList<T> {
     head: Option<Box<Event<T>>>,
 }
