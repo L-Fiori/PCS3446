@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use PCS3446::routines::create_event_to_routine;
 use PCS3446::event_list::*;
 use PCS3446::event_loop::event_loop;
+use PCS3446::populate_list::populate_list;
 
 fn main() {
     // Define the number of timesteps and the time delay in milliseconds
@@ -18,7 +19,10 @@ fn main() {
     let event_to_routine = create_event_to_routine();
 
     // Build event list
-    let mut event_list: PCS3446::event_list::EventList<Option<i32>> = EventList::new();
+    // let mut event_list: PCS3446::event_list::EventList<Option<i32>> = EventList::new();
+
+    // Populate event list
+    let mut event_list = populate_list(1);
 
     // Enter the event loop
     while current_timestep < num_timesteps {
