@@ -50,7 +50,7 @@ fn main() {
     }
 }
 
-fn process_current_timestep<T: std::fmt::Debug>(event_list: &mut EventList<T>, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> i32 {
+fn process_current_timestep(event_list: &mut EventList, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> i32 {
     // Your code for processing the current timestep goes here
     println!("Instante de simulacao: {}", timestep);
     // println!("Event list: {:?}", event_list);

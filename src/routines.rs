@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use crate::system_abstractions::{Job};
+use crate::event_list::{Metadata};
 
 pub fn select_routine<'a>(event_to_routine: &'a HashMap<&'a str, &'a str>, event_name: &'a str) -> &'a str {
     match event_to_routine.get(event_name) {
@@ -11,9 +13,9 @@ pub trait Runnable {
     fn run(&self);
 }
 
-pub fn create_routine(routine: &str) -> Box<dyn Runnable> {
+pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
     match routine {
-        "JobArrival" => Box::new(JobArrival),
+        "JobArrival" => Box::new(JobArrival{metadata: metadata.clone()}),
         "JobEntrance" => Box::new(JobEntrance),
         "RequestMemory" => Box::new(RequestMemory),
         "RequestCPU" => Box::new(RequestCPU),
@@ -52,10 +54,25 @@ impl Runnable for DefaultRoutine {
     }
 }
 
-struct JobArrival;
+struct JobArrival {
+    metadata: Metadata,
+}
+
+impl JobArrival {
+    fn unwrap_metadata(&self) -> i32 {
+        match &self.metadata {
+            Metadata::JobArrival(num) => *num,
+            _ => 0,
+        }
+    }
+}
+
 impl Runnable for JobArrival {
     fn run(&self) {
         println!("JobArrival is running!");
+        let job_number = self.unwrap_metadata();
+        let new_job = Job {id: job_number, state: 1};
+        println!("JobArrival finished running!")
     }
 }
 

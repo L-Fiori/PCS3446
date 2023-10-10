@@ -2,7 +2,7 @@ use crate::event_list::EventList;
 use crate::routines::{select_routine, create_routine};
 use std::collections::HashMap;
 
-pub fn event_loop<T: std::fmt::Debug> (event_list: &mut EventList<T>, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> Option<i32> {
+pub fn event_loop (event_list: &mut EventList, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> Option<i32> {
 
     let mut continue_processing = true;
 
@@ -11,7 +11,7 @@ pub fn event_loop<T: std::fmt::Debug> (event_list: &mut EventList<T>, event_to_r
         if let Some(event) = event_list.pop() {
             let time = event.time;
             let name = &event.name;
-            let _metadata = &event.metadata;
+            let metadata = &event.metadata;
 
             if time > timestep {
                 event_list.push_back(*event);
@@ -22,11 +22,11 @@ pub fn event_loop<T: std::fmt::Debug> (event_list: &mut EventList<T>, event_to_r
             // todo: create a better log interface and a real log file
             println!("Event name: {}", name);
             println!("Event time: {}", time);
-            // println!("Event metadata: {}", metadata);
+            println!("Event metadata: {:?}", metadata);
 
             // Select the function that will handle the event
             let routine = select_routine(event_to_routine, &name);
-            let runnable = create_routine(&routine);
+            let runnable = create_routine(&routine, metadata);
 
             // Execute the function
             runnable.run();
