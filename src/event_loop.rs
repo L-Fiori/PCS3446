@@ -1,10 +1,13 @@
-use crate::event_list::EventList;
 use crate::routines::{select_routine, create_routine};
+use crate::system_abstractions::ControlModule;
 use std::collections::HashMap;
 
-pub fn event_loop (event_list: &mut EventList, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> Option<i32> {
+pub fn event_loop (event_to_routine: &HashMap<&str, &str>, timestep: i32, control_module: &ControlModule) -> Option<i32> {
 
     let mut continue_processing = true;
+    let shared_state = &control_module.shared_state;
+    let raw_event_list = shared_state.get_event_list();
+    let mut event_list = raw_event_list.lock().unwrap();
 
     while continue_processing {
         // Extract the first event of the list
@@ -29,7 +32,7 @@ pub fn event_loop (event_list: &mut EventList, event_to_routine: &HashMap<&str, 
             let runnable = create_routine(&routine, metadata);
 
             // Execute the function
-            runnable.run();
+            runnable.run(control_module);
         } else {
             continue_processing = false;
         }

@@ -1,7 +1,136 @@
 // In this file it is supposed to be implemented system
 // abstractions such as memory, cpu and jobs.
+use crate::event_list::{EventList, Event};
+use std::sync::{Arc, Mutex};
 
 pub struct Job {
     pub id: i32,
     pub state: i32,
+}
+
+pub struct SystemEntryQueue {
+    jobs: Vec<Job>,
+}
+
+impl SystemEntryQueue {
+    pub fn new() -> Self {
+        SystemEntryQueue { jobs: Vec::new() }
+    }
+
+    pub fn add_job(&mut self, job: Job) {
+        self.jobs.push(job);
+    }
+
+    pub fn remove_job(&mut self) -> Option<Job> {
+        self.jobs.pop()
+    }
+}
+
+pub struct MemoryAllocQueue {
+    jobs: Vec<Job>,
+}
+
+impl MemoryAllocQueue {
+    pub fn new() -> Self {
+        MemoryAllocQueue { jobs: Vec::new() }
+    }
+
+    pub fn add_job(&mut self, job: Job) {
+        self.jobs.push(job);
+    }
+
+    pub fn remove_job(&mut self) -> Option<Job> {
+        self.jobs.pop()
+    }
+}
+
+pub struct CPUAllocQueue {
+    jobs: Vec<Job>,
+}
+
+impl CPUAllocQueue {
+    pub fn new() -> Self {
+        CPUAllocQueue { jobs: Vec::new() }
+    }
+
+    pub fn add_job(&mut self, job: Job) {
+        self.jobs.push(job);
+    }
+
+    pub fn remove_job(&mut self) -> Option<Job> {
+        self.jobs.pop()
+    }
+}
+
+pub struct SharedState {
+    event_list: Arc<Mutex<EventList>>,
+    system_entry_queue: Arc<Mutex<SystemEntryQueue>>,
+    memory_alloc_queue: Arc<Mutex<MemoryAllocQueue>>,
+    cpu_alloc_queue: Arc<Mutex<CPUAllocQueue>>,
+}
+
+impl SharedState {
+    pub fn new(
+        event_list: EventList,
+        system_entry_queue: SystemEntryQueue,
+        memory_alloc_queue: MemoryAllocQueue,
+        cpu_alloc_queue: CPUAllocQueue,
+    ) -> Self {
+        SharedState {
+            event_list: Arc::new(Mutex::new(event_list)),
+            system_entry_queue: Arc::new(Mutex::new(system_entry_queue)),
+            memory_alloc_queue: Arc::new(Mutex::new(memory_alloc_queue)),
+            cpu_alloc_queue: Arc::new(Mutex::new(cpu_alloc_queue)),
+        }
+    }
+
+    pub fn get_event_list(&self) -> Arc<Mutex<EventList>> {
+        self.event_list.clone()
+    }
+
+    pub fn get_system_entry_queue(&self) -> Arc<Mutex<SystemEntryQueue>> {
+        self.system_entry_queue.clone()
+    }
+
+    pub fn get_memory_alloc_queue(&self) -> Arc<Mutex<MemoryAllocQueue>> {
+        self.memory_alloc_queue.clone()
+    }
+
+    pub fn get_cpu_alloc_queue(&self) -> Arc<Mutex<CPUAllocQueue>> {
+        self.cpu_alloc_queue.clone()
+    }
+}
+
+pub struct ControlModule {
+    pub shared_state: SharedState,
+}
+
+impl ControlModule {
+    pub fn new(shared_state: SharedState) -> Self {
+        ControlModule { shared_state }
+    }
+
+    pub fn add_event(&self, event: Event) {
+        let event_list = self.shared_state.get_event_list();
+        let mut list = event_list.lock().unwrap();
+        list.push_back(event);
+    }
+
+    pub fn add_SEQ(&self, job: Job) {
+        let system_entry_queue = self.shared_state.get_system_entry_queue();
+        let mut queue = system_entry_queue.lock().unwrap();
+        queue.add_job(job);
+    }
+
+    pub fn add_MAQ(&self, job: Job) {
+        let memory_alloc_queue = self.shared_state.get_memory_alloc_queue();
+        let mut queue = memory_alloc_queue.lock().unwrap();
+        queue.add_job(job);
+    }
+
+    pub fn add_CAQ(&self, job: Job) {
+        let cpu_alloc_queue = self.shared_state.get_cpu_alloc_queue();
+        let mut queue = cpu_alloc_queue.lock().unwrap();
+        queue.add_job(job);
+    }
 }

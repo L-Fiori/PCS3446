@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::system_abstractions::{Job};
-use crate::event_list::{Metadata};
+use crate::system_abstractions::{Job, ControlModule};
+use crate::event_list::{Metadata, Event};
 
 pub fn select_routine<'a>(event_to_routine: &'a HashMap<&'a str, &'a str>, event_name: &'a str) -> &'a str {
     match event_to_routine.get(event_name) {
@@ -10,7 +10,7 @@ pub fn select_routine<'a>(event_to_routine: &'a HashMap<&'a str, &'a str>, event
 }
 
 pub trait Runnable {
-    fn run(&self);
+    fn run(&self, control_module: &ControlModule);
 }
 
 pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
@@ -49,7 +49,7 @@ pub fn create_event_to_routine() -> HashMap<&'static str, &'static str> {
 
 struct DefaultRoutine;
 impl Runnable for DefaultRoutine {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("DefaultRoutine is running!");
     }
 }
@@ -68,59 +68,79 @@ impl JobArrival {
 }
 
 impl Runnable for JobArrival {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("JobArrival is running!");
+
+        // Add the new job to the system entry queue
         let job_number = self.unwrap_metadata();
         let new_job = Job {id: job_number, state: 1};
-        println!("JobArrival finished running!")
+        control_module.add_SEQ(new_job);
+
+        // Add the job entrance event to be immediately treated
+
+        let new_event = Box::new(Event {
+            time: 0,
+            name: "Ingresso de job".to_string(),
+            metadata: Metadata::JobEntrance(job_number),
+            next: None,
+        });
+        control_module.add_event(*new_event);
+
+        // FALTA IMPLEMENTAR:
+        // "Se houver um job em execução, isto é,
+        // o processador estiver ocupado, o novo job
+        // deverá aguardar na fila de espera pelo ingresso
+        // ao sistema o término do job que está sendo executado."
+
+        println!("JobArrival finished running!");
     }
 }
 
 struct JobEntrance;
 impl Runnable for JobEntrance {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("JobEntrance is running!");
     }
 }
 
 struct RequestMemory;
 impl Runnable for RequestMemory {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("RequestMemory is running!");
     }
 }
 
 struct RequestCPU;
 impl Runnable for RequestCPU {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("RequestCPU is running!");
     }
 }
 
 struct EndProcess;
 impl Runnable for EndProcess {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("EndProcess is running!");
     }
 }
 
 struct FreeCPU;
 impl Runnable for FreeCPU {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("FreeCPU is running!");
     }
 }
 
 struct FreeMemory;
 impl Runnable for FreeMemory {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("FreeMemory is running!");
     }
 }
 
 struct ExitSystem;
 impl Runnable for ExitSystem {
-    fn run(&self) {
+    fn run(&self, control_module: &ControlModule) {
         println!("ExitSystem is running!");
     }
 }

@@ -1,7 +1,7 @@
 #[derive(Debug, Clone)]
 pub enum Metadata {
     JobArrival(i32),
-    JobEntrance,
+    JobEntrance(i32),
     RequestMemory,
     RequestCPU,
     EndProcess,

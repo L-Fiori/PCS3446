@@ -2,9 +2,9 @@ use std::time::{Duration, Instant};
 use std::thread::sleep;
 use std::collections::HashMap;
 use PCS3446::routines::create_event_to_routine;
-use PCS3446::event_list::*;
 use PCS3446::event_loop::event_loop;
 use PCS3446::populate_list::populate_list;
+use PCS3446::system_abstractions::{ControlModule, SharedState, SystemEntryQueue, MemoryAllocQueue, CPUAllocQueue};
 
 fn main() {
     // Define the number of timesteps and the time delay in milliseconds
@@ -22,12 +22,21 @@ fn main() {
     // let mut event_list: PCS3446::event_list::EventList<Option<i32>> = EventList::new();
 
     // Populate event list
-    let mut event_list = populate_list(1);
+    let event_list = populate_list(1);
+
+    // Create the control module and its requirements
+    let system_entry_queue = SystemEntryQueue::new();
+    let memory_alloc_queue = MemoryAllocQueue::new();
+    let cpu_alloc_queue = CPUAllocQueue::new();
+
+    let shared_state = SharedState::new(event_list, system_entry_queue, memory_alloc_queue, cpu_alloc_queue);
+
+    let control_module = ControlModule::new(shared_state);
 
     // Enter the event loop
     while current_timestep < num_timesteps {
         // Perform actions for the current timestep
-        let new_timestep = process_current_timestep(&mut event_list, &event_to_routine, current_timestep);
+        let new_timestep = process_current_timestep(&event_to_routine, current_timestep, &control_module);
 
         // Calculate the elapsed time since the start
         let elapsed_time = start_time.elapsed();
@@ -50,13 +59,13 @@ fn main() {
     }
 }
 
-fn process_current_timestep(event_list: &mut EventList, event_to_routine: &HashMap<&str, &str>, timestep: i32) -> i32 {
+fn process_current_timestep(event_to_routine: &HashMap<&str, &str>, timestep: i32, control_module: &ControlModule) -> i32 {
     // Your code for processing the current timestep goes here
     println!("Instante de simulacao: {}", timestep);
     // println!("Event list: {:?}", event_list);
     //println!("Hashmap: {:?}", event_to_routine);
 
-    if let Some(new_timestep) = event_loop(event_list, event_to_routine, timestep) {
+    if let Some(new_timestep) = event_loop(event_to_routine, timestep, control_module) {
         new_timestep
     } else {
         timestep+1
