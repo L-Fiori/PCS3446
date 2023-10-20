@@ -1,8 +1,10 @@
+use crate::system_abstractions::{Job};
+
 #[derive(Debug, Clone)]
 pub enum Metadata {
     JobArrival(i32),
-    JobEntrance(i32),
-    RequestMemory,
+    JobEntrance(Job),
+    RequestMemory(Job),
     RequestCPU,
     EndProcess,
     FreeCPU,

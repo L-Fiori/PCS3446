@@ -9,7 +9,7 @@ use PCS3446::system_abstractions::{ControlModule, SharedState, SystemEntryQueue,
 fn main() {
     // Define the number of timesteps and the time delay in milliseconds
     let num_timesteps = 1000;
-    let timestep_duration_ms = 100;
+    let timestep_duration_ms = 1000;
 
     // Initialize the current timestep and a start time
     let mut current_timestep = 0;

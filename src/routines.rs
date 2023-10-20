@@ -16,7 +16,7 @@ pub trait Runnable {
 pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
     match routine {
         "JobArrival" => Box::new(JobArrival{metadata: metadata.clone()}),
-        "JobEntrance" => Box::new(JobEntrance),
+        "JobEntrance" => Box::new(JobEntrance{metadata: metadata.clone()}),
         "RequestMemory" => Box::new(RequestMemory),
         "RequestCPU" => Box::new(RequestCPU),
         "EndProcess" => Box::new(EndProcess),
@@ -54,7 +54,7 @@ impl Runnable for DefaultRoutine {
     }
 }
 
-struct JobArrival {
+struct JobArrival{
     metadata: Metadata,
 }
 
@@ -74,14 +74,14 @@ impl Runnable for JobArrival {
         // Add the new job to the system entry queue
         let job_number = self.unwrap_metadata();
         let new_job = Job {id: job_number, state: 1};
-        control_module.add_SEQ(new_job);
+        control_module.add_SEQ(new_job.clone());
 
         // Add the job entrance event to be immediately treated
 
         let new_event = Box::new(Event {
             time: 0,
             name: "Ingresso de job".to_string(),
-            metadata: Metadata::JobEntrance(job_number),
+            metadata: Metadata::JobEntrance(new_job),
             next: None,
         });
         control_module.add_event(*new_event);
@@ -96,10 +96,39 @@ impl Runnable for JobArrival {
     }
 }
 
-struct JobEntrance;
+struct JobEntrance {
+    metadata: Metadata,
+}
+
+impl JobEntrance {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::JobEntrance(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for JobEntrance {
     fn run(&self, control_module: &ControlModule) {
         println!("JobEntrance is running!");
+
+        if let Some(mut job) = self.unwrap_metadata() {
+
+            control_module.remove_SEQ();
+
+            job.state = 2;
+
+            // Add the job entrance event to be immediately treated
+
+            let new_event = Box::new(Event {
+                time: 0,
+                name: "Requisicao de memoria de job".to_string(),
+                metadata: Metadata::RequestMemory(job.clone()),
+                next: None,
+            });
+            control_module.add_event(*new_event);
+        }
     }
 }
 

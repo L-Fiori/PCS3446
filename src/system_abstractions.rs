@@ -3,6 +3,7 @@
 use crate::event_list::{EventList, Event};
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone, Debug)]
 pub struct Job {
     pub id: i32,
     pub state: i32,
@@ -120,6 +121,12 @@ impl ControlModule {
         let system_entry_queue = self.shared_state.get_system_entry_queue();
         let mut queue = system_entry_queue.lock().unwrap();
         queue.add_job(job);
+    }
+
+    pub fn remove_SEQ(&self) {
+        let system_entry_queue = self.shared_state.get_system_entry_queue();
+        let mut queue = system_entry_queue.lock().unwrap();
+        queue.remove_job();
     }
 
     pub fn add_MAQ(&self, job: Job) {
