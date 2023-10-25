@@ -18,7 +18,7 @@ pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
         "JobArrival" => Box::new(JobArrival{metadata: metadata.clone()}),
         "JobEntrance" => Box::new(JobEntrance{metadata: metadata.clone()}),
         "RequestMemory" => Box::new(RequestMemory{metadata: metadata.clone()}),
-        "RequestCPU" => Box::new(RequestCPU),
+        "RequestCPU" => Box::new(RequestCPU{metadata: metadata.clone()}),
         "EndProcess" => Box::new(EndProcess),
         "FreeCPU" => Box::new(FreeCPU),
         "FreeMemory" => Box::new(FreeMemory),
@@ -162,11 +162,26 @@ impl Runnable for RequestMemory {
         if let Some(mut job) = self.unwrap_metadata() {
             let num = job.memory_size;
             control_module.alloc_memory(num);
+            job.state = 3;
+            control_module.add_CAQ(job.clone());
+
+            // Add the request memory event to be immediately treated
+
+            let new_event = Box::new(Event {
+                time: 0,
+                name: "Requisicao de processador de job".to_string(),
+                metadata: Metadata::RequestCPU(job.clone()),
+                next: None,
+            });
+            control_module.add_event(*new_event);
         }
     }
 }
 
-struct RequestCPU;
+struct RequestCPU {
+    metadata: Metadata,
+}
+
 impl Runnable for RequestCPU {
     fn run(&self, control_module: &ControlModule) {
         println!("RequestCPU is running!");
