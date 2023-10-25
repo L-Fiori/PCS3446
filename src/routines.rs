@@ -119,7 +119,7 @@ impl Runnable for JobEntrance {
 
             job.state = 2;
 
-            // Add the job entrance event to be immediately treated
+            // Add the request memory event to be immediately treated
 
             let new_event = Box::new(Event {
                 time: 0,
@@ -136,6 +136,15 @@ struct RequestMemory;
 impl Runnable for RequestMemory {
     fn run(&self, control_module: &ControlModule) {
         println!("RequestMemory is running!");
+        // Verifica inicialmente se há algum job na fila de
+        // alocação de memória. Se não ocorrer, e houver área livre,
+        // alocam-se para o job X a quantidade de memória solicitada,
+        // e atualiza a quantidade de memória restante. Supostamente
+        // o loader deve carregar o código do Job na área alocada e
+        // o job passa para estado 3 (pronto para execução) e passa
+        // a aguardar na fila do processador. A seguir, é inserido o
+        // evento dependente “Requisição de Processador Job X” para
+        // tratamento imediato.
     }
 }
 

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use PCS3446::routines::create_event_to_routine;
 use PCS3446::event_loop::event_loop;
 use PCS3446::populate_list::populate_list;
-use PCS3446::system_abstractions::{ControlModule, SharedState, SystemEntryQueue, MemoryAllocQueue, CPUAllocQueue};
+use PCS3446::system_abstractions::{Memory, ControlModule, SharedState, SystemEntryQueue, MemoryAllocQueue, CPUAllocQueue};
 
 fn main() {
     // Define the number of timesteps and the time delay in milliseconds
@@ -28,8 +28,9 @@ fn main() {
     let system_entry_queue = SystemEntryQueue::new();
     let memory_alloc_queue = MemoryAllocQueue::new();
     let cpu_alloc_queue = CPUAllocQueue::new();
+    let memory = Memory::new(128);
 
-    let shared_state = SharedState::new(event_list, system_entry_queue, memory_alloc_queue, cpu_alloc_queue);
+    let shared_state = SharedState::new(event_list, system_entry_queue, memory_alloc_queue, cpu_alloc_queue, memory);
 
     let control_module = ControlModule::new(shared_state);
 

@@ -9,6 +9,23 @@ pub struct Job {
     pub state: i32,
 }
 
+#[derive(Debug, Clone)]
+pub struct Memory {
+    pub available_memory: i32,
+}
+
+impl Memory {
+    pub fn new(number: i32) -> Self {
+        Memory { available_memory: number }
+    }
+
+    pub fn alloc(&mut self, num: i32) {
+        // TODO: implement panic when memory is not available,
+        // also further error treatments.
+        self.available_memory = self.available_memory - num;
+    }
+}
+
 pub struct SystemEntryQueue {
     jobs: Vec<Job>,
 }
@@ -68,6 +85,7 @@ pub struct SharedState {
     system_entry_queue: Arc<Mutex<SystemEntryQueue>>,
     memory_alloc_queue: Arc<Mutex<MemoryAllocQueue>>,
     cpu_alloc_queue: Arc<Mutex<CPUAllocQueue>>,
+    memory: Arc<Mutex<Memory>>,
 }
 
 impl SharedState {
@@ -76,12 +94,14 @@ impl SharedState {
         system_entry_queue: SystemEntryQueue,
         memory_alloc_queue: MemoryAllocQueue,
         cpu_alloc_queue: CPUAllocQueue,
+        memory: Memory,
     ) -> Self {
         SharedState {
             event_list: Arc::new(Mutex::new(event_list)),
             system_entry_queue: Arc::new(Mutex::new(system_entry_queue)),
             memory_alloc_queue: Arc::new(Mutex::new(memory_alloc_queue)),
             cpu_alloc_queue: Arc::new(Mutex::new(cpu_alloc_queue)),
+            memory: Arc::new(Mutex::new(memory)),
         }
     }
 
@@ -99,6 +119,10 @@ impl SharedState {
 
     pub fn get_cpu_alloc_queue(&self) -> Arc<Mutex<CPUAllocQueue>> {
         self.cpu_alloc_queue.clone()
+    }
+
+    pub fn get_memory(&self) -> Arc<Mutex<Memory>> {
+        self.memory.clone()
     }
 }
 
@@ -139,5 +163,11 @@ impl ControlModule {
         let cpu_alloc_queue = self.shared_state.get_cpu_alloc_queue();
         let mut queue = cpu_alloc_queue.lock().unwrap();
         queue.add_job(job);
+    }
+
+    pub fn alloc_memory(&self, num: i32) {
+        let memory = self.shared_state.get_memory();
+        let mut mem = memory.lock().unwrap();
+        mem.alloc(num);
     }
 }
