@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 pub struct Job {
     pub id: i32,
     pub state: i32,
+    pub memory_size: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -168,6 +169,8 @@ impl ControlModule {
     pub fn alloc_memory(&self, num: i32) {
         let memory = self.shared_state.get_memory();
         let mut mem = memory.lock().unwrap();
+        println!("Available memory left: {}k", mem.available_memory);
         mem.alloc(num);
+        println!("Allocated {}k memory for the job. {}k memory space remaining.", num, mem.available_memory);
     }
 }

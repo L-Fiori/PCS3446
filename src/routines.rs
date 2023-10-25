@@ -17,7 +17,7 @@ pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
     match routine {
         "JobArrival" => Box::new(JobArrival{metadata: metadata.clone()}),
         "JobEntrance" => Box::new(JobEntrance{metadata: metadata.clone()}),
-        "RequestMemory" => Box::new(RequestMemory),
+        "RequestMemory" => Box::new(RequestMemory{metadata: metadata.clone()}),
         "RequestCPU" => Box::new(RequestCPU),
         "EndProcess" => Box::new(EndProcess),
         "FreeCPU" => Box::new(FreeCPU),
@@ -59,10 +59,10 @@ struct JobArrival{
 }
 
 impl JobArrival {
-    fn unwrap_metadata(&self) -> i32 {
+    fn unwrap_metadata(&self) -> (i32, i32) {
         match &self.metadata {
-            Metadata::JobArrival(num) => *num,
-            _ => 0,
+            Metadata::JobArrival(num, mem) => (*num, *mem),
+            _ => (0, 0),
         }
     }
 }
@@ -72,8 +72,9 @@ impl Runnable for JobArrival {
         println!("JobArrival is running!");
 
         // Add the new job to the system entry queue
-        let job_number = self.unwrap_metadata();
-        let new_job = Job {id: job_number, state: 1};
+        let job_number = self.unwrap_metadata().0;
+        let job_memory_size = self.unwrap_metadata().1;
+        let new_job = Job {id: job_number, state: 1, memory_size: job_memory_size};
         control_module.add_SEQ(new_job.clone());
 
         // Add the job entrance event to be immediately treated
@@ -132,7 +133,19 @@ impl Runnable for JobEntrance {
     }
 }
 
-struct RequestMemory;
+struct RequestMemory {
+    metadata: Metadata,
+}
+
+impl RequestMemory {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::RequestMemory(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for RequestMemory {
     fn run(&self, control_module: &ControlModule) {
         println!("RequestMemory is running!");
@@ -145,6 +158,11 @@ impl Runnable for RequestMemory {
         // a aguardar na fila do processador. A seguir, é inserido o
         // evento dependente “Requisição de Processador Job X” para
         // tratamento imediato.
+    
+        if let Some(mut job) = self.unwrap_metadata() {
+            let num = job.memory_size;
+            control_module.alloc_memory(num);
+        }
     }
 }
 
