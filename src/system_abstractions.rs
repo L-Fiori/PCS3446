@@ -8,6 +8,7 @@ pub struct Job {
     pub id: i32,
     pub state: i32,
     pub memory_size: i32,
+    pub cpu_time: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -81,12 +82,32 @@ impl CPUAllocQueue {
     }
 }
 
+pub struct ExecQueue {
+    jobs: Vec<Job>,
+}
+
+impl ExecQueue {
+    pub fn new() -> Self {
+        ExecQueue { jobs: Vec::new() }
+    }
+
+    pub fn add_job(&mut self, job: Job) {
+        self.jobs.push(job);
+    }
+
+    pub fn remove_job(&mut self) -> Option<Job> {
+        self.jobs.pop()
+    }
+}
+
 pub struct SharedState {
     event_list: Arc<Mutex<EventList>>,
     system_entry_queue: Arc<Mutex<SystemEntryQueue>>,
     memory_alloc_queue: Arc<Mutex<MemoryAllocQueue>>,
     cpu_alloc_queue: Arc<Mutex<CPUAllocQueue>>,
+    exec_queue: Arc<Mutex<ExecQueue>>,
     memory: Arc<Mutex<Memory>>,
+    pub current_timestep: i32,
 }
 
 impl SharedState {
@@ -95,14 +116,18 @@ impl SharedState {
         system_entry_queue: SystemEntryQueue,
         memory_alloc_queue: MemoryAllocQueue,
         cpu_alloc_queue: CPUAllocQueue,
+        exec_queue: ExecQueue,
         memory: Memory,
+        current_timestep: i32,
     ) -> Self {
         SharedState {
             event_list: Arc::new(Mutex::new(event_list)),
             system_entry_queue: Arc::new(Mutex::new(system_entry_queue)),
             memory_alloc_queue: Arc::new(Mutex::new(memory_alloc_queue)),
             cpu_alloc_queue: Arc::new(Mutex::new(cpu_alloc_queue)),
+            exec_queue: Arc::new(Mutex::new(exec_queue)),
             memory: Arc::new(Mutex::new(memory)),
+            current_timestep,
         }
     }
 
@@ -120,6 +145,10 @@ impl SharedState {
 
     pub fn get_cpu_alloc_queue(&self) -> Arc<Mutex<CPUAllocQueue>> {
         self.cpu_alloc_queue.clone()
+    }
+
+    pub fn get_exec_queue(&self) -> Arc<Mutex<ExecQueue>> {
+        self.exec_queue.clone()
     }
 
     pub fn get_memory(&self) -> Arc<Mutex<Memory>> {
@@ -159,11 +188,35 @@ impl ControlModule {
         let mut queue = memory_alloc_queue.lock().unwrap();
         queue.add_job(job);
     }
+    
+    pub fn remove_MAQ(&self) {
+        let memory_alloc_queue = self.shared_state.get_memory_alloc_queue();
+        let mut queue = memory_alloc_queue.lock().unwrap();
+        queue.remove_job();
+    }
 
     pub fn add_CAQ(&self, job: Job) {
         let cpu_alloc_queue = self.shared_state.get_cpu_alloc_queue();
         let mut queue = cpu_alloc_queue.lock().unwrap();
         queue.add_job(job);
+    }
+
+    pub fn remove_CAQ(&self) {
+        let cpu_alloc_queue = self.shared_state.get_cpu_alloc_queue();
+        let mut queue = cpu_alloc_queue.lock().unwrap();
+        queue.remove_job();
+    }
+
+    pub fn add_EQ(&self, job: Job) {
+        let exec_queue = self.shared_state.get_exec_queue();
+        let mut queue = exec_queue.lock().unwrap();
+        queue.add_job(job);
+    }
+
+    pub fn remove_EQ(&self) {
+        let exec_queue = self.shared_state.get_exec_queue();
+        let mut queue = exec_queue.lock().unwrap();
+        queue.remove_job();
     }
 
     pub fn alloc_memory(&self, num: i32) {
@@ -173,4 +226,14 @@ impl ControlModule {
         mem.alloc(num);
         println!("Allocated {}k memory for the job. {}k memory space remaining.", num, mem.available_memory);
     }
+
+    pub fn get_current_timestep(&self) -> i32 {
+        let current_timestep = self.shared_state.current_timestep;
+        current_timestep
+    }
+
+    pub fn update_current_timestep(&mut self, current_timestep: i32) {
+        self.shared_state.current_timestep = current_timestep;
+    }
+
 }

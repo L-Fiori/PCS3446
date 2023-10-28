@@ -2,7 +2,7 @@ use crate::system_abstractions::{Job};
 
 #[derive(Debug, Clone)]
 pub enum Metadata {
-    JobArrival(i32, i32),
+    JobArrival(i32, i32, i32),
     JobEntrance(Job),
     RequestMemory(Job),
     RequestCPU(Job),
@@ -31,15 +31,31 @@ impl EventList {
         EventList { head: None }
     }
 
-    // Add a new event to the event list
     pub fn push(&mut self, time: i32, name: String, metadata: Metadata) {
-        let new_event = Box::new(Event {
+        let mut new_event = Box::new(Event {
             time,
             name,
             metadata,
-            next: self.head.take(),
+            next: None, // Initialize next as None for the new event
         });
-        self.head = Some(new_event);
+
+        // Check if the list is empty or if the new event should be inserted at the beginning
+        if self.head.is_none() || time < self.head.as_ref().unwrap().time {
+            new_event.next = self.head.take(); // Set new_event.next to the current head
+            self.head = Some(new_event); // Update the head
+        } else {
+            let mut current = &mut self.head;
+            
+            // Find the appropriate position to insert the new event
+            while let Some(event) = current {
+                if event.next.is_none() || time < event.next.as_ref().unwrap().time {
+                    new_event.next = event.next.take(); // Set new_event.next to the following event
+                    event.next = Some(new_event); // Update the current event's next to the new event
+                    break;
+                }
+                current = &mut event.next;
+            }
+        }
     }
 
     // Get an iterator over the event list

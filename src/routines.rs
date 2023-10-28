@@ -59,10 +59,10 @@ struct JobArrival{
 }
 
 impl JobArrival {
-    fn unwrap_metadata(&self) -> (i32, i32) {
+    fn unwrap_metadata(&self) -> (i32, i32, i32) {
         match &self.metadata {
-            Metadata::JobArrival(num, mem) => (*num, *mem),
-            _ => (0, 0),
+            Metadata::JobArrival(num, mem, cpu) => (*num, *mem, *cpu),
+            _ => (0, 0, 0),
         }
     }
 }
@@ -74,7 +74,8 @@ impl Runnable for JobArrival {
         // Add the new job to the system entry queue
         let job_number = self.unwrap_metadata().0;
         let job_memory_size = self.unwrap_metadata().1;
-        let new_job = Job {id: job_number, state: 1, memory_size: job_memory_size};
+        let job_cpu_time = self.unwrap_metadata().2;
+        let new_job = Job {id: job_number, state: 1, memory_size: job_memory_size, cpu_time: job_cpu_time};
         control_module.add_SEQ(new_job.clone());
 
         // Add the job entrance event to be immediately treated
@@ -158,6 +159,9 @@ impl Runnable for RequestMemory {
         // a aguardar na fila do processador. A seguir, é inserido o
         // evento dependente “Requisição de Processador Job X” para
         // tratamento imediato.
+        //
+        // FALTA IMPLEMENTAR: interacoes om a fila de alocacao
+        // de memoria, verificacao de area livre essas coisas.
     
         if let Some(mut job) = self.unwrap_metadata() {
             let num = job.memory_size;
@@ -182,9 +186,49 @@ struct RequestCPU {
     metadata: Metadata,
 }
 
+impl RequestCPU {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::RequestCPU(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for RequestCPU {
     fn run(&self, control_module: &ControlModule) {
         println!("RequestCPU is running!");
+        // Insere o job X na fila de execução, para ser
+        // devidamente processado (estado 4). Agora, o
+        // job X passou a ser executado. Daí, insere-se o
+        // evento “Fim de processamento Job X”, calculando o
+        // instante de término do processamento do job com
+        // base no instante corrente e o tempo de execução
+        // previsto para o job X.
+        
+        if let Some(mut job) = self.unwrap_metadata() {
+            job.state = 4;
+            let job_cpu_time = job.cpu_time;
+            let current_timestep = control_module.get_current_timestep();
+            println!("current timestep: {}", current_timestep);
+            println!("job cpu time: {}", job_cpu_time);
+            let state_end = current_timestep + job_cpu_time;
+            println!("State end: {}", state_end);
+            control_module.add_EQ(job);
+
+            // Add the EndProcess event to be treated after job_cpu_time
+            // timesteps.
+
+            let new_event = Box::new(Event {
+                time: state_end,
+                name: "Fim de processamento de job".to_string(),
+                metadata: Metadata::EndProcess,
+                next: None,
+            });
+            control_module.add_event(*new_event);
+            println!("EventList: {:?}", control_module.shared_state.get_event_list());
+
+        }
     }
 }
 
