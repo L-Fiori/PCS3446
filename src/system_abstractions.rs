@@ -44,6 +44,10 @@ impl SystemEntryQueue {
     pub fn remove_job(&mut self) -> Option<Job> {
         self.jobs.pop()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.jobs.is_empty()
+    }
 }
 
 pub struct MemoryAllocQueue {
@@ -246,4 +250,9 @@ impl ControlModule {
         self.shared_state.current_timestep = current_timestep;
     }
 
+    pub fn seq_is_empty(&self) -> bool {
+        let system_entry_queue = self.shared_state.get_system_entry_queue();
+        let queue = system_entry_queue.lock().unwrap();
+        queue.is_empty()
+    }
 }

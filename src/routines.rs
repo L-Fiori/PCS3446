@@ -207,7 +207,19 @@ impl Runnable for RequestCPU {
     }
 }
 
-struct EndProcess;
+struct EndProcess {
+    metadata: Metadata,
+}
+
+impl EndProcess {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::EndProcess(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for EndProcess {
     fn run(&self, control_module: &ControlModule) {
         println!("EndProcess is running!");
@@ -219,14 +231,32 @@ impl Runnable for EndProcess {
         // na fila de eventos, para o Job a ser terminado, o
         // evento dependente de liberação de processador.
 
-        control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU);
+        if let Some(mut job) = self.unwrap_metadata() {
+            control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU(job));
     }
 }
 
-struct FreeCPU;
+struct FreeCPU {
+    metadata: Metadata,
+}
+
+impl FreeCPU {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::FreeCPU(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for FreeCPU {
     fn run(&self, control_module: &ControlModule) {
         println!("FreeCPU is running!");
+
+        if let Some(mut job) = self.unwrap_metadata() {
+            job.state = 5;
+            control_module.remove_EQ();
+        }
     }
 }
 
