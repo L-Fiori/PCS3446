@@ -189,10 +189,10 @@ impl ControlModule {
         queue.add_job(job);
     }
 
-    pub fn remove_SEQ(&self) {
+    pub fn remove_SEQ(&self) -> Option<Job> {
         let system_entry_queue = self.shared_state.get_system_entry_queue();
         let mut queue = system_entry_queue.lock().unwrap();
-        queue.remove_job();
+        queue.remove_job()
     }
 
     pub fn add_MAQ(&self, job: Job) {

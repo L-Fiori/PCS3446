@@ -303,6 +303,20 @@ impl ExitSystem {
 impl Runnable for ExitSystem {
     fn run(&self, control_module: &ControlModule) {
         println!("ExitSystem is running!");
+
+        if !control_module.seq_is_empty() {
+            println!("Fila de ingresso ao sistema contem algum evento: inserindo evento dependente de ingresso do job ao sistema.");
+
+            let mut job = control_module.remove_SEQ().unwrap();
+
+            job.state = 2;
+
+            // Add the request memory event to be immediately treated
+
+            control_module.add_event(0, "Requisicao de memoria de job".to_string(), Metadata::RequestMemory(job.clone()));
+        } else {
+            println!("Fila de ingresso ao sistema nao contem nenhum evento.")
+        }
     }
 }
 
