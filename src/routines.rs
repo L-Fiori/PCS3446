@@ -152,7 +152,7 @@ impl Runnable for RequestMemory {
     
         if let Some(mut job) = self.unwrap_metadata() {
             let num = job.memory_size;
-            control_module.alloc_memory(num);
+            control_module.alloc_memory(job.clone(), num);
             job.state = 3;
             control_module.add_CAQ(job.clone());
 
@@ -281,7 +281,7 @@ impl Runnable for FreeMemory {
         if let Some(mut job) = self.unwrap_metadata() {
             job.state = 6;
             let num = job.memory_size;
-            control_module.dealloc_memory(num);
+            control_module.dealloc_memory(job.clone());
             control_module.add_event(0, "Saida do sistema job".to_string(), Metadata::ExitSystem(job));
         }
     }

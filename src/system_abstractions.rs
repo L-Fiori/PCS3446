@@ -3,7 +3,7 @@
 use crate::event_list::{EventList, Metadata};
 use std::sync::{Arc, Mutex};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Job {
     pub id: i32,
     pub state: i32,
@@ -11,24 +11,52 @@ pub struct Job {
     pub cpu_time: i32,
 }
 
+#[derive(Clone, Debug)]
+struct Segment {
+    owner: Option<Job>,
+    size: i32,
+}
+
 #[derive(Debug, Clone)]
 pub struct Memory {
-    pub available_memory: i32,
+    total_memory: i32,
+    segments: Vec<Segment>,
 }
 
 impl Memory {
     pub fn new(number: i32) -> Self {
-        Memory { available_memory: number }
+        Memory {
+            total_memory: number,
+            segments: Vec::new(),
+        }
     }
 
-    pub fn alloc(&mut self, num: i32) {
-        // TODO: implement panic when memory is not available,
-        // also further error treatments.
-        self.available_memory = self.available_memory - num;
+    pub fn alloc(&mut self, job: Job, size: i32) -> Result<(), &'static str> {
+        if size <= self.available_memory() {
+            self.segments.push(Segment {
+                owner: Some(job),
+                size,
+            });
+            Ok(())
+        } else {
+            Err("Memory allocation failed: Not enough available memory")
+        }
     }
 
-    pub fn dealloc(&mut self, num: i32) {
-        self.available_memory = self.available_memory + num;
+    pub fn dealloc(&mut self, job: Job) {
+        let index = self.segments.iter().position(|s| s.owner.as_ref().map_or(false, |owner| owner.id == job.clone().id));;
+        println!("{:?}", index);
+        println!("{:?}", self.segments);
+        println!("{:?}", Some(job.clone()));
+        if let Some(index) = index {
+            let segment = self.segments.remove(index);
+            // Deallocate the memory used by the segment
+            println!("SEGMENT SIZE: {}", segment.size);
+        }
+    }
+
+    pub fn available_memory(&self) -> i32 {
+        self.total_memory - self.segments.iter().map(|s| s.size).sum::<i32>()
     }
 }
 
@@ -237,21 +265,34 @@ impl ControlModule {
        queue.is_empty()
     }
 
-    pub fn alloc_memory(&self, num: i32) {
+    pub fn alloc_memory(&self, job: Job, num: i32) -> Result<(), &'static str> {
         let memory = self.shared_state.get_memory();
         let mut mem = memory.lock().unwrap();
-        println!("Available memory left: {}k", mem.available_memory);
-        mem.alloc(num);
-        println!("Allocated {}k memory for the job. {}k memory space remaining.", num, mem.available_memory);
+        println!("Available memory left: {}k", mem.available_memory());
+        let result = mem.alloc(job.clone(), num);
+        match result {
+            Ok(()) => println!(
+                "Allocated {}k memory for Job {}. {}k memory space remaining.",
+                num,
+                job.id,
+                mem.available_memory()
+            ),
+            Err(error) => println!("Memory allocation failed: {}", error),
+        }
+        result
     }
 
-    pub fn dealloc_memory(&self, num: i32) {
+    pub fn dealloc_memory(&self, job: Job) {
         let memory = self.shared_state.get_memory();
         let mut mem = memory.lock().unwrap();
-        println!("Available memory left: {}k", mem.available_memory);
-        mem.dealloc(num);
-        println!("Deallocated {}k memory that the job was using. {}k memory space remaining.", num, mem.available_memory);
-    }   
+        println!("Available memory left: {}k", mem.available_memory());
+        mem.dealloc(job.clone());
+        println!(
+            "Deallocated memory that Job {} was using. {}k memory space remaining.",
+            job.id,
+            mem.available_memory()
+        );
+    }
 
     pub fn get_current_timestep(&self) -> i32 {
         let current_timestep = self.shared_state.current_timestep;
