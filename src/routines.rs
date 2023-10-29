@@ -219,7 +219,7 @@ impl Runnable for EndProcess {
         // na fila de eventos, para o Job a ser terminado, o
         // evento dependente de liberação de processador.
 
-
+        control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU);
     }
 }
 
