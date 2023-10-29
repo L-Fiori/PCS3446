@@ -6,10 +6,10 @@ pub enum Metadata {
     JobEntrance(Job),
     RequestMemory(Job),
     RequestCPU(Job),
-    EndProcess,
-    FreeCPU,
-    FreeMemory,
-    ExitSystem,
+    EndProcess(Job),
+    FreeCPU(Job),
+    FreeMemory(Job),
+    ExitSystem(Job),
     DefaultRoutine,
 }
 

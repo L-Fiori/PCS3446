@@ -19,10 +19,10 @@ pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
         "JobEntrance" => Box::new(JobEntrance{metadata: metadata.clone()}),
         "RequestMemory" => Box::new(RequestMemory{metadata: metadata.clone()}),
         "RequestCPU" => Box::new(RequestCPU{metadata: metadata.clone()}),
-        "EndProcess" => Box::new(EndProcess),
-        "FreeCPU" => Box::new(FreeCPU),
-        "FreeMemory" => Box::new(FreeMemory),
-        "ExitSystem" => Box::new(ExitSystem),
+        "EndProcess" => Box::new(EndProcess{metadata: metadata.clone()}),
+        "FreeCPU" => Box::new(FreeCPU{metadata: metadata.clone()}),
+        "FreeMemory" => Box::new(FreeMemory{metadata: metadata.clone()}),
+        "ExitSystem" => Box::new(ExitSystem{metadata: metadata.clone()}),
         _ => Box::new(DefaultRoutine), // Handle unknown routines
     }
 }
@@ -195,12 +195,12 @@ impl Runnable for RequestCPU {
             println!("job cpu time: {}", job_cpu_time);
             let state_end = current_timestep + job_cpu_time;
             println!("State end: {}", state_end);
-            control_module.add_EQ(job);
+            control_module.add_EQ(job.clone());
 
             // Add the EndProcess event to be treated after job_cpu_time
             // timesteps.
 
-            control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess);
+            control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
             println!("EventList: {:?}", control_module.shared_state.get_event_list());
 
         }
@@ -231,8 +231,9 @@ impl Runnable for EndProcess {
         // na fila de eventos, para o Job a ser terminado, o
         // evento dependente de liberação de processador.
 
-        if let Some(mut job) = self.unwrap_metadata() {
+        if let Some(job) = self.unwrap_metadata() {
             control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU(job));
+        }
     }
 }
 
@@ -260,14 +261,38 @@ impl Runnable for FreeCPU {
     }
 }
 
-struct FreeMemory;
+struct FreeMemory {
+    metadata: Metadata,
+}
+
+impl FreeMemory {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::FreeMemory(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for FreeMemory {
     fn run(&self, control_module: &ControlModule) {
         println!("FreeMemory is running!");
     }
 }
 
-struct ExitSystem;
+struct ExitSystem {
+    metadata: Metadata,
+}
+
+impl ExitSystem {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::ExitSystem(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Runnable for ExitSystem {
     fn run(&self, control_module: &ControlModule) {
         println!("ExitSystem is running!");
