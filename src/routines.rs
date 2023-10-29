@@ -202,7 +202,6 @@ impl Runnable for RequestCPU {
 
             control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
             println!("EventList: {:?}", control_module.shared_state.get_event_list());
-
         }
     }
 }
@@ -257,6 +256,7 @@ impl Runnable for FreeCPU {
         if let Some(mut job) = self.unwrap_metadata() {
             job.state = 5;
             control_module.remove_EQ();
+            control_module.add_event(0, "Liberacao de memoria job".to_string(), Metadata::FreeMemory(job));
         }
     }
 }
@@ -277,6 +277,12 @@ impl FreeMemory {
 impl Runnable for FreeMemory {
     fn run(&self, control_module: &ControlModule) {
         println!("FreeMemory is running!");
+
+        if let Some(mut job) = self.unwrap_metadata() {
+            job.state = 6;
+            let num = job.memory_size;
+            control_module.dealloc_memory(num);
+        }
     }
 }
 

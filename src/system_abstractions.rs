@@ -26,6 +26,10 @@ impl Memory {
         // also further error treatments.
         self.available_memory = self.available_memory - num;
     }
+
+    pub fn dealloc(&mut self, num: i32) {
+        self.available_memory = self.available_memory + num;
+    }
 }
 
 pub struct SystemEntryQueue {
@@ -240,6 +244,14 @@ impl ControlModule {
         mem.alloc(num);
         println!("Allocated {}k memory for the job. {}k memory space remaining.", num, mem.available_memory);
     }
+
+    pub fn dealloc_memory(&self, num: i32) {
+        let memory = self.shared_state.get_memory();
+        let mut mem = memory.lock().unwrap();
+        println!("Available memory left: {}k", mem.available_memory);
+        mem.dealloc(num);
+        println!("Deallocated {}k memory that the job was using. {}k memory space remaining.", num, mem.available_memory);
+    }   
 
     pub fn get_current_timestep(&self) -> i32 {
         let current_timestep = self.shared_state.current_timestep;
