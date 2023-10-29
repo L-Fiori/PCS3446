@@ -16,8 +16,8 @@ pub fn test_1() -> EventList {
     event_list.push(999, String::from("Encerramento"), Metadata::JobArrival(0, 0, 0));
     event_list.push(240, String::from("Chegada de job"), Metadata::JobArrival(4, 40, 40));
     event_list.push(220, String::from("Chegada de job"), Metadata::JobArrival(3, 80, 80));
-    event_list.push(20, String::from("Chegada de job"), Metadata::JobArrival(2, 100, 120));
     event_list.push(20, String::from("Chegada de job"), Metadata::JobArrival(1, 30, 60));
+    event_list.push(20, String::from("Chegada de job"), Metadata::JobArrival(2, 100, 120));
 
     event_list
 }

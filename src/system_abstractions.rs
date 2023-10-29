@@ -98,6 +98,10 @@ impl ExecQueue {
     pub fn remove_job(&mut self) -> Option<Job> {
         self.jobs.pop()
     }
+    
+    pub fn is_empty(&self) -> bool {
+        self.jobs.is_empty()
+    }
 }
 
 pub struct SharedState {
@@ -217,6 +221,12 @@ impl ControlModule {
         let exec_queue = self.shared_state.get_exec_queue();
         let mut queue = exec_queue.lock().unwrap();
         queue.remove_job();
+    }
+
+    pub fn eq_is_empty(&self) -> bool {
+       let exec_queue = self.shared_state.get_exec_queue();
+       let queue = exec_queue.lock().unwrap();
+       queue.is_empty()
     }
 
     pub fn alloc_memory(&self, num: i32) {

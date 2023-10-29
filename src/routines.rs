@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::system_abstractions::{Job, ControlModule};
-use crate::event_list::{Metadata, Event};
+use crate::event_list::{Metadata};
 
 pub fn select_routine<'a>(event_to_routine: &'a HashMap<&'a str, &'a str>, event_name: &'a str) -> &'a str {
     match event_to_routine.get(event_name) {
@@ -76,17 +76,16 @@ impl Runnable for JobArrival {
         let job_memory_size = self.unwrap_metadata().1;
         let job_cpu_time = self.unwrap_metadata().2;
         let new_job = Job {id: job_number, state: 1, memory_size: job_memory_size, cpu_time: job_cpu_time};
-        control_module.add_SEQ(new_job.clone());
+        
+        if control_module.eq_is_empty() {
 
-        // Add the job entrance event to be immediately treated
+            // Add the job entrance event to be immediately treated
 
-        control_module.add_event(0, "Ingresso de job".to_string(), Metadata::JobEntrance(new_job));
+            control_module.add_event(0, "Ingresso de job".to_string(), Metadata::JobEntrance(new_job));
 
-        // FALTA IMPLEMENTAR:
-        // "Se houver um job em execução, isto é,
-        // o processador estiver ocupado, o novo job
-        // deverá aguardar na fila de espera pelo ingresso
-        // ao sistema o término do job que está sendo executado."
+        } else {
+            control_module.add_SEQ(new_job.clone());
+        }
 
         println!("JobArrival finished running!");
     }
