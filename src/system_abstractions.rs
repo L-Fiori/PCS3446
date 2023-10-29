@@ -1,6 +1,6 @@
 // In this file it is supposed to be implemented system
 // abstractions such as memory, cpu and jobs.
-use crate::event_list::{EventList, Event};
+use crate::event_list::{EventList, Metadata};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
@@ -165,10 +165,10 @@ impl ControlModule {
         ControlModule { shared_state }
     }
 
-    pub fn add_event(&self, event: Event) {
+    pub fn add_event(&self, time: i32, name: String, metadata: Metadata) {
         let event_list = self.shared_state.get_event_list();
         let mut list = event_list.lock().unwrap();
-        list.push_back(event);
+        list.push(time, name, metadata);
     }
 
     pub fn add_SEQ(&self, job: Job) {

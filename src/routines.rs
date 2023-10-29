@@ -80,13 +80,7 @@ impl Runnable for JobArrival {
 
         // Add the job entrance event to be immediately treated
 
-        let new_event = Box::new(Event {
-            time: 0,
-            name: "Ingresso de job".to_string(),
-            metadata: Metadata::JobEntrance(new_job),
-            next: None,
-        });
-        control_module.add_event(*new_event);
+        control_module.add_event(0, "Ingresso de job".to_string(), Metadata::JobEntrance(new_job));
 
         // FALTA IMPLEMENTAR:
         // "Se houver um job em execução, isto é,
@@ -123,13 +117,7 @@ impl Runnable for JobEntrance {
 
             // Add the request memory event to be immediately treated
 
-            let new_event = Box::new(Event {
-                time: 0,
-                name: "Requisicao de memoria de job".to_string(),
-                metadata: Metadata::RequestMemory(job.clone()),
-                next: None,
-            });
-            control_module.add_event(*new_event);
+            control_module.add_event(0, "Requisicao de memoria de job".to_string(), Metadata::RequestMemory(job.clone()));
         }
     }
 }
@@ -171,13 +159,7 @@ impl Runnable for RequestMemory {
 
             // Add the request memory event to be immediately treated
 
-            let new_event = Box::new(Event {
-                time: 0,
-                name: "Requisicao de processador de job".to_string(),
-                metadata: Metadata::RequestCPU(job.clone()),
-                next: None,
-            });
-            control_module.add_event(*new_event);
+            control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(job.clone()));
         }
     }
 }
@@ -219,13 +201,7 @@ impl Runnable for RequestCPU {
             // Add the EndProcess event to be treated after job_cpu_time
             // timesteps.
 
-            let new_event = Box::new(Event {
-                time: state_end,
-                name: "Fim de processamento de job".to_string(),
-                metadata: Metadata::EndProcess,
-                next: None,
-            });
-            control_module.add_event(*new_event);
+            control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess);
             println!("EventList: {:?}", control_module.shared_state.get_event_list());
 
         }
@@ -236,6 +212,15 @@ struct EndProcess;
 impl Runnable for EndProcess {
     fn run(&self, control_module: &ControlModule) {
         println!("EndProcess is running!");
+        // se houver um job na fila de ingresso ao sistema,
+        // ele deve ser retirado dessa fila. O tratamento
+        // consiste em realizar três atividades de tratamento
+        // imediato: a liberação do processador, a liberação
+        // da memória e a saída do sistema. Inicialmente insere-se,
+        // na fila de eventos, para o Job a ser terminado, o
+        // evento dependente de liberação de processador.
+
+
     }
 }
 
