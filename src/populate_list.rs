@@ -22,3 +22,14 @@ pub fn test_1() -> EventList {
     event_list
 }
 
+pub fn test2() -> EventList {
+    let mut event_list: EventList = EventList::new();
+    event_list.push(999, String::from("Encerramento"), Metadata::JobArrival(0, 0, 0));
+    event_list.push(50, String::from("Chegada de job"), Metadata::JobArrival(5, 80, 20));
+    event_list.push(40, String::from("Chegada de job"), Metadata::JobArrival(4, 50, 15));
+    event_list.push(30, String::from("Chegada de job"), Metadata::JobArrival(3, 30, 10));
+    event_list.push(20, String::from("Chegada de job"), Metadata::JobArrival(2, 60, 12));
+    event_list.push(10, String::from("Chegada de job"), Metadata::JobArrival(1, 40, 25));
+
+    event_list
+}
