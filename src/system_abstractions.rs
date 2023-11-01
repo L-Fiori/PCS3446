@@ -11,15 +11,18 @@ pub struct Job {
     pub cpu_time: i32,
 }
 
-#[derive(Clone, Debug)]
-struct Segment {
-    owner: Option<Job>,
+#[derive(Debug, Clone)]
+pub struct Segment {
+    id: i32,
+    start_address: i32,
     size: i32,
+    owner: Option<Job>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Memory {
     total_memory: i32,
+    next_segment_id: i32,
     segments: Vec<Segment>,
 }
 
@@ -27,36 +30,101 @@ impl Memory {
     pub fn new(number: i32) -> Self {
         Memory {
             total_memory: number,
+            next_segment_id: 1,
             segments: Vec::new(),
         }
     }
 
-    pub fn alloc(&mut self, job: Job, size: i32) -> Result<(), &'static str> {
-        if size <= self.available_memory() {
+    pub fn alloc(&mut self, job: Job, size: i32) -> Result<Segment, &'static str> {
+        let segment = self.allocate_segment(size);
+        if let Some(segment) = segment {
             self.segments.push(Segment {
-                owner: Some(job),
+                id: self.next_segment_id,
+                start_address: segment.start_address,
                 size,
+                owner: Some(job.clone()),
             });
-            Ok(())
+            self.next_segment_id += 1;
+            println!(
+                "Allocated Segment: ID={}, Start Address={}, Size={} for Job {}",
+                segment.id,
+                segment.start_address,
+                segment.size,
+                job.id
+            );
+            Ok(segment)
         } else {
             Err("Memory allocation failed: Not enough available memory")
         }
     }
 
     pub fn dealloc(&mut self, job: Job) {
-        let index = self.segments.iter().position(|s| s.owner.as_ref().map_or(false, |owner| owner.id == job.clone().id));;
-        println!("{:?}", index);
-        println!("{:?}", self.segments);
-        println!("{:?}", Some(job.clone()));
-        if let Some(index) = index {
+        let indices: Vec<usize> = self
+            .segments
+            .iter()
+            .enumerate()
+            .filter_map(|(index, segment)| {
+                if segment.owner.as_ref().map_or(false, |owner| owner.id == job.id) {
+                    Some(index)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for &index in indices.iter().rev() {
             let segment = self.segments.remove(index);
             // Deallocate the memory used by the segment
-            println!("SEGMENT SIZE: {}", segment.size);
+            println!(
+                "Deallocated Segment: ID={}, Start Address={}, Size={} (previously owned by Job {})",
+                segment.id,
+                segment.start_address,
+                segment.size,
+                job.id
+            ); 
         }
     }
 
     pub fn available_memory(&self) -> i32 {
         self.total_memory - self.segments.iter().map(|s| s.size).sum::<i32>()
+    }
+
+    fn allocate_segment(&mut self, size: i32) -> Option<Segment> {
+        let mut start_address = 0;
+
+        for segment in &self.segments {
+            let gap_size = segment.start_address - start_address;
+            if gap_size >= size {
+                // Found a suitable gap
+                return Some(Segment {
+                    id: 0, // You can set the correct ID when inserting into the segments vector
+                    start_address,
+                    size,
+                    owner: None,
+                });
+            }
+            start_address = segment.end_address();
+        }
+
+        // Check for available memory after the last segment
+        let remaining_memory = self.total_memory - start_address;
+        if remaining_memory >= size {
+            return Some(Segment {
+                id: 0, // You can set the correct ID when inserting into the segments vector
+                start_address,
+                size,
+                owner: None,
+            });
+        }
+
+        // If no suitable gap is found, return None
+        None
+    }
+}
+
+impl Segment {
+    fn end_address(&self) -> i32 {
+        self.start_address + self.size
     }
 }
 
@@ -265,13 +333,13 @@ impl ControlModule {
        queue.is_empty()
     }
 
-    pub fn alloc_memory(&self, job: Job, num: i32) -> Result<(), &'static str> {
+    pub fn alloc_memory(&self, job: Job, num: i32) -> Result<Segment, &'static str> {
         let memory = self.shared_state.get_memory();
         let mut mem = memory.lock().unwrap();
         println!("Available memory left: {}k", mem.available_memory());
         let result = mem.alloc(job.clone(), num);
         match result {
-            Ok(()) => println!(
+            Ok(_) => println!(
                 "Allocated {}k memory for Job {}. {}k memory space remaining.",
                 num,
                 job.id,
