@@ -7,6 +7,7 @@ use crate::event_list::*;
 pub fn populate_list(test_case: i32) -> EventList{
     match test_case {
         1 => test_1(),
+        2 => test_2(),
         _ => EventList::new(),
     }
 }
@@ -22,7 +23,7 @@ pub fn test_1() -> EventList {
     event_list
 }
 
-pub fn test2() -> EventList {
+pub fn test_2() -> EventList {
     let mut event_list: EventList = EventList::new();
     event_list.push(999, String::from("Encerramento"), Metadata::JobArrival(0, 0, 0));
     event_list.push(50, String::from("Chegada de job"), Metadata::JobArrival(5, 80, 20));

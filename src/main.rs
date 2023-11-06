@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use PCS3446::routines::create_event_to_routine;
 use PCS3446::event_loop::event_loop;
 use PCS3446::populate_list::populate_list;
-use PCS3446::system_abstractions::{Memory, ControlModule, SharedState, SystemEntryQueue, ExecQueue, MemoryAllocQueue, CPUAllocQueue};
+use PCS3446::system_abstractions::{Memory, ControlModule, SharedState, SystemEntryQueue, ExecQueue, MemoryAllocQueue, CPUAllocQueue, JobTable};
 
 fn main() {
     // Define the number of timesteps and the time delay in milliseconds
@@ -22,7 +22,7 @@ fn main() {
     // let mut event_list: PCS3446::event_list::EventList<Option<i32>> = EventList::new();
 
     // Populate event list
-    let event_list = populate_list(1);
+    let event_list = populate_list(2);
 
     // Create the control module and its requirements
     let system_entry_queue = SystemEntryQueue::new();
@@ -30,8 +30,9 @@ fn main() {
     let cpu_alloc_queue = CPUAllocQueue::new();
     let exec_queue = ExecQueue::new();
     let memory = Memory::new(128);
+    let job_table = JobTable::new();
 
-    let shared_state = SharedState::new(event_list, system_entry_queue, memory_alloc_queue, cpu_alloc_queue, exec_queue, memory, current_timestep);
+    let shared_state = SharedState::new(event_list, system_entry_queue, memory_alloc_queue, cpu_alloc_queue, exec_queue, memory, current_timestep, job_table);
 
     let mut control_module = ControlModule::new(shared_state);
 

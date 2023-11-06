@@ -187,21 +187,39 @@ impl Runnable for RequestCPU {
         // base no instante corrente e o tempo de execução
         // previsto para o job X.
         
-        if let Some(mut job) = self.unwrap_metadata() {
-            job.state = 4;
-            let job_cpu_time = job.cpu_time;
-            let current_timestep = control_module.get_current_timestep();
-            println!("current timestep: {}", current_timestep);
-            println!("job cpu time: {}", job_cpu_time);
-            let state_end = current_timestep + job_cpu_time;
-            println!("State end: {}", state_end);
-            control_module.add_EQ(job.clone());
+        let time_slice = 10;
+        let current_timestep = control_module.get_current_timestep();
+        
+        if let Some(mut job) = self.unwrap_metadata() {    
+            if job.state != 4 {
+                job.state = 4;
+                let job_cpu_time = job.cpu_time;
+                
+                control_module.add_to_job_table(job.id, job_cpu_time);
 
-            // Add the EndProcess event to be treated after job_cpu_time
-            // timesteps.
+                println!("Timestep atual: {}", current_timestep);
+                println!("Tempo de cpu do job: {}", job_cpu_time);
 
-            control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
-            println!("EventList: {:?}", control_module.shared_state.get_event_list());
+                let state_end = current_timestep + time_slice;
+                println!("Fim do uso da cpu: {}", state_end);
+                control_module.add_EQ(job.clone());
+
+                // Add the EndProcess event to be treated after job_cpu_time
+                // timesteps.
+
+                control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
+                println!("EventList: {:?}", control_module.shared_state.get_event_list());
+            } else {
+                // dai significa que estamos pedindo cpu de novo
+                // apos o job ja ter executado por um timeslice
+               
+                let time_remaining = control_module.get_time_remaining(job.id);
+                if time_remaining < time_slice {
+                    let state_end = current_timestep + time_remaining;
+                } else {
+                    let state_end = current_timestep + time_slice;
+                }
+            }
         }
     }
 }

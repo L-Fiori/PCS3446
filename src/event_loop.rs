@@ -36,9 +36,12 @@ pub fn event_loop (event_to_routine: &HashMap<&str, &str>, timestep: i32, contro
 
         // Generate event log
         // todo: create a better log interface and a real log file
+        println!("---------------------------");
+        println!("\n");
         println!("Event name: {}", name);
         println!("Event time: {}", time);
         println!("Event metadata: {:?}", metadata);
+        println!("\n");
 
         // Select the function that will handle the event
         let routine = select_routine(event_to_routine, &name);

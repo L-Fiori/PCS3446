@@ -2,6 +2,7 @@
 // abstractions such as memory, cpu and jobs.
 use crate::event_list::{EventList, Metadata};
 use std::sync::{Arc, Mutex};
+use std::collections::{HashMap};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Job {
@@ -9,6 +10,26 @@ pub struct Job {
     pub state: i32,
     pub memory_size: i32,
     pub cpu_time: i32,
+}
+
+pub struct JobTable {
+    table: HashMap<i32, i32>,
+}
+
+impl JobTable {
+    pub fn new() -> Self {
+        JobTable { table: HashMap::new() }
+    }
+
+    fn add_job(&mut self, job_id: i32, execution_time: i32) {
+        self.table.insert(job_id, execution_time);
+    }
+
+    fn pause_job(&mut self, job_id: i32, time_slice: i32) {
+        if let Some(remaining_time) = self.table.get_mut(&job_id) {
+            *remaining_time -= time_slice;
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -46,7 +67,7 @@ impl Memory {
             });
             self.next_segment_id += 1;
             println!(
-                "Allocated Segment: ID={}, Start Address={}, Size={} for Job {}",
+                "Segmento alocado: ID={}, Endereco de inicio={}, Tamanho={} para o Job {}",
                 segment.id,
                 segment.start_address,
                 segment.size,
@@ -54,7 +75,7 @@ impl Memory {
             );
             Ok(segment)
         } else {
-            Err("Memory allocation failed: Not enough available memory")
+            Err("Alocacao de memoria falhou: Sem espaco disponivel na memoria")
         }
     }
 
@@ -76,7 +97,7 @@ impl Memory {
             let segment = self.segments.remove(index);
             // Deallocate the memory used by the segment
             println!(
-                "Deallocated Segment: ID={}, Start Address={}, Size={} (previously owned by Job {})",
+                "Segmento desalocado: ID={}, Endereco de inicio={}, Tamanho={} (relativo ao Job {})",
                 segment.id,
                 segment.start_address,
                 segment.size,
@@ -216,6 +237,7 @@ pub struct SharedState {
     exec_queue: Arc<Mutex<ExecQueue>>,
     memory: Arc<Mutex<Memory>>,
     pub current_timestep: i32,
+    job_table: Arc<Mutex<JobTable>>,
 }
 
 impl SharedState {
@@ -227,6 +249,7 @@ impl SharedState {
         exec_queue: ExecQueue,
         memory: Memory,
         current_timestep: i32,
+        job_table: JobTable,
     ) -> Self {
         SharedState {
             event_list: Arc::new(Mutex::new(event_list)),
@@ -236,6 +259,7 @@ impl SharedState {
             exec_queue: Arc::new(Mutex::new(exec_queue)),
             memory: Arc::new(Mutex::new(memory)),
             current_timestep,
+            job_table: Arc::new(Mutex::new(job_table)),
         }
     }
 
@@ -261,6 +285,10 @@ impl SharedState {
 
     pub fn get_memory(&self) -> Arc<Mutex<Memory>> {
         self.memory.clone()
+    }
+    
+    pub fn get_job_table(&self) -> Arc<Mutex<JobTable>> {
+        self.job_table.clone()
     }
 }
 
@@ -336,15 +364,10 @@ impl ControlModule {
     pub fn alloc_memory(&self, job: Job, num: i32) -> Result<Segment, &'static str> {
         let memory = self.shared_state.get_memory();
         let mut mem = memory.lock().unwrap();
-        println!("Available memory left: {}k", mem.available_memory());
+        println!("Memoria livre restante: {}k", mem.available_memory());
         let result = mem.alloc(job.clone(), num);
         match result {
-            Ok(_) => println!(
-                "Allocated {}k memory for Job {}. {}k memory space remaining.",
-                num,
-                job.id,
-                mem.available_memory()
-            ),
+            Ok(_) => println!(""),
             Err(error) => println!("Memory allocation failed: {}", error),
         }
         result
@@ -353,13 +376,8 @@ impl ControlModule {
     pub fn dealloc_memory(&self, job: Job) {
         let memory = self.shared_state.get_memory();
         let mut mem = memory.lock().unwrap();
-        println!("Available memory left: {}k", mem.available_memory());
+        println!("Memoria livre disponivel: {}k", mem.available_memory());
         mem.dealloc(job.clone());
-        println!(
-            "Deallocated memory that Job {} was using. {}k memory space remaining.",
-            job.id,
-            mem.available_memory()
-        );
     }
 
     pub fn get_current_timestep(&self) -> i32 {
@@ -375,5 +393,17 @@ impl ControlModule {
         let system_entry_queue = self.shared_state.get_system_entry_queue();
         let queue = system_entry_queue.lock().unwrap();
         queue.is_empty()
+    }
+
+    pub fn add_to_job_table(&mut self, id: i32, cpu_time: i32) {
+        let job_table = self.shared_state.get_job_table();
+        let mut table = job_table.lock().unwrap();
+        table.add_job(id, cpu_time);
+    }
+
+    pub fn update_job_table(&mut self, id: i32, time_slice: i32) {
+        let job_table = self.shared_state.get_job_table();
+        let mut table = job_table.lock().unwrap();
+        table.pause_job(id, time_slice);
     }
 }
