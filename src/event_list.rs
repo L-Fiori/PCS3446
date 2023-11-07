@@ -10,6 +10,7 @@ pub enum Metadata {
     FreeCPU(Job),
     FreeMemory(Job),
     ExitSystem(Job),
+    PauseJob(Job),
     DefaultRoutine,
 }
 

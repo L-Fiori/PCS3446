@@ -23,6 +23,7 @@ pub fn create_routine(routine: &str, metadata: &Metadata) -> Box<dyn Runnable> {
         "FreeCPU" => Box::new(FreeCPU{metadata: metadata.clone()}),
         "FreeMemory" => Box::new(FreeMemory{metadata: metadata.clone()}),
         "ExitSystem" => Box::new(ExitSystem{metadata: metadata.clone()}),
+        "PauseJob" => Box::new(PauseJob{metadata: metadata.clone()}),
         _ => Box::new(DefaultRoutine), // Handle unknown routines
     }
 }
@@ -40,6 +41,7 @@ pub fn create_event_to_routine() -> HashMap<&'static str, &'static str> {
     event_to_routine.insert("Liberacao de processador job", "FreeCPU");
     event_to_routine.insert("Liberacao de memoria job", "FreeMemory");
     event_to_routine.insert("Saida do sistema job", "ExitSystem");
+    event_to_routine.insert("Pause job", "PauseJob");
     //event_to_routine.insert("", "");
     
     event_to_routine
@@ -204,10 +206,10 @@ impl Runnable for RequestCPU {
                 println!("Fim do uso da cpu: {}", state_end);
                 control_module.add_EQ(job.clone());
 
-                // Add the EndProcess event to be treated after job_cpu_time
+                // Add the PauseJob event to be treated after job_cpu_time
                 // timesteps.
 
-                control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
+                control_module.add_event(state_end, "Pause Job".to_string(), Metadata::PauseJob(job));
                 println!("EventList: {:?}", control_module.shared_state.get_event_list());
             } else {
                 // dai significa que estamos pedindo cpu de novo
@@ -216,13 +218,44 @@ impl Runnable for RequestCPU {
                 let time_remaining = control_module.get_time_remaining(job.id);
                 if time_remaining < time_slice {
                     let state_end = current_timestep + time_remaining;
+                    control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
                 } else {
                     let state_end = current_timestep + time_slice;
+                    control_module.add_event(state_end, "Pause Job".to_string(), Metadata::PauseJob(job));
                 }
             }
         }
     }
 }
+
+
+struct PauseJob {
+    metadata: Metadata,
+}
+
+impl PauseJob {
+    fn unwrap_metadata(&self) -> Option<Job> {
+        match &self.metadata {
+            Metadata::PauseJob(Job) => Some(Job.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl Runnable for PauseJob {
+    fn run(&self, control_module: &ControlModule) {
+        println!("PauseJob is running!");
+
+        if let Some(mut job) = self.unwrap_metadata() {
+            let time_slice = 10;
+            control_module.update_job_table(job.id, time_slice);
+
+            // Checa se tem job na system entry queue
+
+            // Checa se tem job na 
+    }
+}
+
 
 struct EndProcess {
     metadata: Metadata,

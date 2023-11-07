@@ -30,6 +30,14 @@ impl JobTable {
             *remaining_time -= time_slice;
         }
     }
+
+    fn get_time_remaining(&mut self, job_id: i32) -> i32 {
+        if let Some(remaining_time) = self.table.get_mut(&job_id) {
+            *remaining_time
+        } else {
+            -1
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -395,7 +403,7 @@ impl ControlModule {
         queue.is_empty()
     }
 
-    pub fn add_to_job_table(&mut self, id: i32, cpu_time: i32) {
+    pub fn add_to_job_table(&self, id: i32, cpu_time: i32) {
         let job_table = self.shared_state.get_job_table();
         let mut table = job_table.lock().unwrap();
         table.add_job(id, cpu_time);
@@ -405,5 +413,11 @@ impl ControlModule {
         let job_table = self.shared_state.get_job_table();
         let mut table = job_table.lock().unwrap();
         table.pause_job(id, time_slice);
+    }
+
+    pub fn get_time_remaining(&self, id: i32) -> i32 {
+        let job_table = self.shared_state.get_job_table();
+        let mut table = job_table.lock().unwrap();
+        table.get_time_remaining(id)
     }
 }
