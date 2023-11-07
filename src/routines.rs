@@ -250,9 +250,24 @@ impl Runnable for PauseJob {
             let time_slice = 10;
             control_module.update_job_table(job.id, time_slice);
 
-            // Checa se tem job na system entry queue
+            // Checa se tem job na system entry queue e se o
+            // numero de jobs atualmente rodando eh menor do que
+            // um certo numero
+            
+            let max_jobs = 2;
+            if !control_module.table_is_full(max_jobs) && !control_module.seq_is_empty() {
 
-            // Checa se tem job na 
+                let mut new_job = control_module.remove_SEQ().unwrap();
+
+                new_job.state = 2;
+                
+                // Add the request memory event to be immediately treated
+
+                control_module.add_event(0, "Requisicao de memoria de job".to_string(), Metadata::RequestMemory(new_job.clone()));
+            } else {
+                // Manda mais um requestCPU pro proximo job da fila de cpu,
+                // podendo evidentemente ser o mesmo job
+            }
     }
 }
 
@@ -282,6 +297,7 @@ impl Runnable for EndProcess {
         // evento dependente de liberação de processador.
 
         if let Some(job) = self.unwrap_metadata() {
+            control_module.remove_job_table(job.id);
             control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU(job));
         }
     }

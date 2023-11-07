@@ -31,6 +31,10 @@ impl JobTable {
         }
     }
 
+    fn delete_job(&mut self, job_id: i32) {
+        self.table.remove(job_id);
+    }
+
     fn get_time_remaining(&mut self, job_id: i32) -> i32 {
         if let Some(remaining_time) = self.table.get_mut(&job_id) {
             *remaining_time
@@ -415,9 +419,25 @@ impl ControlModule {
         table.pause_job(id, time_slice);
     }
 
+    pub fn delete_job_table(&self, id: i32) {
+        let job_table = self.shared_state.get_job_table();
+        let mut table = job_table.lock().unwrap();
+        table.delete_job(id);
+    }
+
     pub fn get_time_remaining(&self, id: i32) -> i32 {
         let job_table = self.shared_state.get_job_table();
         let mut table = job_table.lock().unwrap();
         table.get_time_remaining(id)
+    }
+
+    pub fn table_is_full(&self, max_jobs: i32) -> bool {
+        let job_table = self.shared_state.get_job_table();
+        let mut table = job_table.lock().unwrap();
+        if table.len() < max_jobs {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
