@@ -32,7 +32,7 @@ impl JobTable {
     }
 
     fn delete_job(&mut self, job_id: i32) {
-        self.table.remove(job_id);
+        self.table.remove(&job_id);
     }
 
     fn get_time_remaining(&mut self, job_id: i32) -> i32 {
@@ -41,6 +41,10 @@ impl JobTable {
         } else {
             -1
         }
+    }
+
+    fn len(&self) -> i32 {
+        self.table.len().try_into().unwrap()
     }
 }
 
@@ -337,10 +341,10 @@ impl ControlModule {
         queue.add_job(job);
     }
     
-    pub fn remove_MAQ(&self) {
+    pub fn remove_MAQ(&self) -> Option<Job> {
         let memory_alloc_queue = self.shared_state.get_memory_alloc_queue();
         let mut queue = memory_alloc_queue.lock().unwrap();
-        queue.remove_job();
+        queue.remove_job()
     }
 
     pub fn add_CAQ(&self, job: Job) {
@@ -349,10 +353,10 @@ impl ControlModule {
         queue.add_job(job);
     }
 
-    pub fn remove_CAQ(&self) {
+    pub fn remove_CAQ(&self) -> Option<Job> {
         let cpu_alloc_queue = self.shared_state.get_cpu_alloc_queue();
         let mut queue = cpu_alloc_queue.lock().unwrap();
-        queue.remove_job();
+        queue.remove_job()
     }
 
     pub fn add_EQ(&self, job: Job) {
@@ -361,10 +365,10 @@ impl ControlModule {
         queue.add_job(job);
     }
 
-    pub fn remove_EQ(&self) {
+    pub fn remove_EQ(&self) -> Option<Job> {
         let exec_queue = self.shared_state.get_exec_queue();
         let mut queue = exec_queue.lock().unwrap();
-        queue.remove_job();
+        queue.remove_job()
     }
 
     pub fn eq_is_empty(&self) -> bool {
@@ -413,7 +417,7 @@ impl ControlModule {
         table.add_job(id, cpu_time);
     }
 
-    pub fn update_job_table(&mut self, id: i32, time_slice: i32) {
+    pub fn update_job_table(&self, id: i32, time_slice: i32) {
         let job_table = self.shared_state.get_job_table();
         let mut table = job_table.lock().unwrap();
         table.pause_job(id, time_slice);

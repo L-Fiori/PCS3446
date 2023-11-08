@@ -158,7 +158,7 @@ impl Runnable for RequestMemory {
             job.state = 3;
             control_module.add_CAQ(job.clone());
 
-            // Add the request memory event to be immediately treated
+            // Add the request cpu event to be immediately treated
 
             control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(job.clone()));
         }
@@ -209,19 +209,21 @@ impl Runnable for RequestCPU {
                 // Add the PauseJob event to be treated after job_cpu_time
                 // timesteps.
 
-                control_module.add_event(state_end, "Pause Job".to_string(), Metadata::PauseJob(job));
+                control_module.add_event(state_end, "Pause job".to_string(), Metadata::PauseJob(job));
                 println!("EventList: {:?}", control_module.shared_state.get_event_list());
             } else {
                 // dai significa que estamos pedindo cpu de novo
                 // apos o job ja ter executado por um timeslice
                
                 let time_remaining = control_module.get_time_remaining(job.id);
+                control_module.add_EQ(job.clone());
+                control_module.remove_CAQ();
                 if time_remaining < time_slice {
                     let state_end = current_timestep + time_remaining;
                     control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
                 } else {
                     let state_end = current_timestep + time_slice;
-                    control_module.add_event(state_end, "Pause Job".to_string(), Metadata::PauseJob(job));
+                    control_module.add_event(state_end, "Pause job".to_string(), Metadata::PauseJob(job));
                 }
             }
         }
@@ -267,7 +269,16 @@ impl Runnable for PauseJob {
             } else {
                 // Manda mais um requestCPU pro proximo job da fila de cpu,
                 // podendo evidentemente ser o mesmo job
+                
+                let mut new_job = control_module.remove_EQ().unwrap();
+                control_module.add_CAQ(new_job);
+
+                let actual_new_job = control_module.remove_CAQ().unwrap();
+
+                control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(actual_new_job));
+
             }
+        }
     }
 }
 
@@ -297,7 +308,8 @@ impl Runnable for EndProcess {
         // evento dependente de liberação de processador.
 
         if let Some(job) = self.unwrap_metadata() {
-            control_module.remove_job_table(job.id);
+            control_module.delete_job_table(job.id);
+            control_module.remove_EQ();
             control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU(job));
         }
     }
