@@ -156,7 +156,7 @@ impl Runnable for RequestMemory {
             let num = job.memory_size;
             control_module.alloc_memory(job.clone(), num);
             job.state = 3;
-            control_module.add_CAQ(job.clone());
+            //control_module.add_CAQ(job.clone());
 
             // Add the request cpu event to be immediately treated
 
@@ -193,8 +193,8 @@ impl Runnable for RequestCPU {
         let current_timestep = control_module.get_current_timestep();
         
         if let Some(mut job) = self.unwrap_metadata() {    
-            if job.state != 4 {
-                job.state = 4;
+            job.state = 4;
+            if !control_module.job_exists_in_table(job.id) {
                 let job_cpu_time = job.cpu_time;
                 
                 control_module.add_to_job_table(job.id, job_cpu_time);
@@ -251,6 +251,7 @@ impl Runnable for PauseJob {
         if let Some(mut job) = self.unwrap_metadata() {
             let time_slice = 10;
             control_module.update_job_table(job.id, time_slice);
+            job.state = 3;
 
             // Checa se tem job na system entry queue e se o
             // numero de jobs atualmente rodando eh menor do que
@@ -259,6 +260,11 @@ impl Runnable for PauseJob {
             let max_jobs = 2;
             if !control_module.table_is_full(max_jobs) && !control_module.seq_is_empty() {
 
+                let mut old_job = control_module.remove_EQ().unwrap();
+                println!("Removido job {} da fila de execucao", old_job.id);
+                control_module.add_CAQ(old_job);
+
+                println!("Fila de Entrada no Sistema: {:?}", control_module.shared_state.get_system_entry_queue());
                 let mut new_job = control_module.remove_SEQ().unwrap();
 
                 new_job.state = 2;
@@ -269,11 +275,15 @@ impl Runnable for PauseJob {
             } else {
                 // Manda mais um requestCPU pro proximo job da fila de cpu,
                 // podendo evidentemente ser o mesmo job
-                
+
+                println!("Fila de execucao: {:?}", control_module.shared_state.get_exec_queue());
                 let mut new_job = control_module.remove_EQ().unwrap();
+                println!("Fila de execucao apos remocao: {:?}", control_module.shared_state.get_exec_queue());
                 control_module.add_CAQ(new_job);
 
+                println!("Fila de Alocacao de Processador: {:?}", control_module.shared_state.get_cpu_alloc_queue());
                 let actual_new_job = control_module.remove_CAQ().unwrap();
+                println!("Fila de Alocacao de Processador apos remocao: {:?}", control_module.shared_state.get_cpu_alloc_queue());
 
                 control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(actual_new_job));
 

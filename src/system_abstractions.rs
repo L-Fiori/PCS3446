@@ -12,6 +12,7 @@ pub struct Job {
     pub cpu_time: i32,
 }
 
+#[derive(Debug)]
 pub struct JobTable {
     table: HashMap<i32, i32>,
 }
@@ -45,6 +46,10 @@ impl JobTable {
 
     fn len(&self) -> i32 {
         self.table.len().try_into().unwrap()
+    }
+
+    fn job_exists(&self, job_id: i32) -> bool {
+        self.table.contains_key(&job_id)
     }
 }
 
@@ -81,14 +86,14 @@ impl Memory {
                 size,
                 owner: Some(job.clone()),
             });
-            self.next_segment_id += 1;
             println!(
                 "Segmento alocado: ID={}, Endereco de inicio={}, Tamanho={} para o Job {}",
-                segment.id,
+                self.next_segment_id,
                 segment.start_address,
                 segment.size,
                 job.id
             );
+            self.next_segment_id += 1;
             Ok(segment)
         } else {
             Err("Alocacao de memoria falhou: Sem espaco disponivel na memoria")
@@ -134,7 +139,7 @@ impl Memory {
             if gap_size >= size {
                 // Found a suitable gap
                 return Some(Segment {
-                    id: 0, // You can set the correct ID when inserting into the segments vector
+                    id: 0,
                     start_address,
                     size,
                     owner: None,
@@ -165,6 +170,7 @@ impl Segment {
     }
 }
 
+#[derive(Debug)]
 pub struct SystemEntryQueue {
     jobs: Vec<Job>,
 }
@@ -187,6 +193,7 @@ impl SystemEntryQueue {
     }
 }
 
+#[derive(Debug)]
 pub struct MemoryAllocQueue {
     jobs: Vec<Job>,
 }
@@ -205,6 +212,7 @@ impl MemoryAllocQueue {
     }
 }
 
+#[derive(Debug)]
 pub struct CPUAllocQueue {
     jobs: Vec<Job>,
 }
@@ -223,6 +231,7 @@ impl CPUAllocQueue {
     }
 }
 
+#[derive(Debug)]
 pub struct ExecQueue {
     jobs: Vec<Job>,
 }
@@ -443,5 +452,11 @@ impl ControlModule {
         } else {
             return true;
         }
+    }
+
+    pub fn job_exists_in_table(&self, job_id: i32) -> bool {
+        let job_table = self.shared_state.get_job_table();
+        let table = job_table.lock().unwrap();
+        table.job_exists(job_id)
     }
 }
