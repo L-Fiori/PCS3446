@@ -181,7 +181,7 @@ impl SystemEntryQueue {
     }
 
     pub fn add_job(&mut self, job: Job) {
-        self.jobs.push(job);
+        self.jobs.insert(0, job);
     }
 
     pub fn remove_job(&mut self) -> Option<Job> {
@@ -204,11 +204,15 @@ impl MemoryAllocQueue {
     }
 
     pub fn add_job(&mut self, job: Job) {
-        self.jobs.push(job);
+        self.jobs.insert(0, job);
     }
 
     pub fn remove_job(&mut self) -> Option<Job> {
         self.jobs.pop()
+    }
+    
+    pub fn is_empty(&self) -> bool {
+        self.jobs.is_empty()
     }
 }
 
@@ -223,7 +227,7 @@ impl CPUAllocQueue {
     }
 
     pub fn add_job(&mut self, job: Job) {
-        self.jobs.push(job);
+        self.jobs.insert(0, job);
     }
 
     pub fn remove_job(&mut self) -> Option<Job> {
@@ -412,6 +416,12 @@ impl ControlModule {
 
     pub fn update_current_timestep(&mut self, current_timestep: i32) {
         self.shared_state.current_timestep = current_timestep;
+    }
+
+    pub fn maq_is_empty(&self) -> bool {
+        let memory_alloc_queue = self.shared_state.get_memory_alloc_queue();
+        let queue = memory_alloc_queue.lock().unwrap();
+        queue.is_empty()
     }
 
     pub fn seq_is_empty(&self) -> bool {

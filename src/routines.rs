@@ -154,13 +154,22 @@ impl Runnable for RequestMemory {
     
         if let Some(mut job) = self.unwrap_metadata() {
             let num = job.memory_size;
-            control_module.alloc_memory(job.clone(), num);
-            job.state = 3;
-            //control_module.add_CAQ(job.clone());
+            let result = control_module.alloc_memory(job.clone(), num);
+            match result {
+                Ok(value) => {
+                    job.state = 3;
 
-            // Add the request cpu event to be immediately treated
+                    // Add the request cpu event to be immediately treated
 
-            control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(job.clone()));
+                    control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(job.clone()));
+                }
+                Err(value) => {
+                    control_module.add_MAQ(job);
+                    println!("Job adicionado a fila de alocacao de memoria. O sistema tentara alocar a memoria novamente apos a saida de algum job do sistema.");
+                    let new_job = control_module.remove_CAQ().unwrap();
+                    control_module.add_event(0, "Requisicao de processador de job".to_string(), Metadata::RequestCPU(new_job.clone()));
+                }
+            }
         }
     }
 }
@@ -209,16 +218,19 @@ impl Runnable for RequestCPU {
                 // Add the PauseJob event to be treated after job_cpu_time
                 // timesteps.
 
-                control_module.add_event(state_end, "Pause job".to_string(), Metadata::PauseJob(job));
-                println!("EventList: {:?}", control_module.shared_state.get_event_list());
+                if job_cpu_time > time_slice {
+                    control_module.add_event(state_end, "Pause job".to_string(), Metadata::PauseJob(job));
+                } else {
+                    control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
+                }
             } else {
                 // dai significa que estamos pedindo cpu de novo
                 // apos o job ja ter executado por um timeslice
                
                 let time_remaining = control_module.get_time_remaining(job.id);
+                println!("Processing time remaining for job {}: {}", job.id, time_remaining);
                 control_module.add_EQ(job.clone());
-                control_module.remove_CAQ();
-                if time_remaining < time_slice {
+                if time_remaining <= time_slice {
                     let state_end = current_timestep + time_remaining;
                     control_module.add_event(state_end, "Fim de processamento de job".to_string(), Metadata::EndProcess(job));
                 } else {
@@ -226,6 +238,7 @@ impl Runnable for RequestCPU {
                     control_module.add_event(state_end, "Pause job".to_string(), Metadata::PauseJob(job));
                 }
             }
+            println!("EventList: {:?}", control_module.shared_state.get_event_list());
         }
     }
 }
@@ -393,8 +406,16 @@ impl Runnable for ExitSystem {
     fn run(&self, control_module: &ControlModule) {
         println!("ExitSystem is running!");
 
-        if !control_module.seq_is_empty() {
-            println!("Fila de ingresso ao sistema contem algum evento: inserindo evento dependente de ingresso do job ao sistema.");
+        if !control_module.maq_is_empty() {
+            println!("Fila de alocacao de memoria contem algum job: inserindo evento dependente de requisicao de memoria ao sistema.");
+
+            let mut job = control_module.remove_MAQ().unwrap();
+
+            // Add the request memory event to be immediately treated
+
+            control_module.add_event(0, "Requisicao de memoria de job".to_string(), Metadata::RequestMemory(job.clone()));
+        } else if !control_module.seq_is_empty() {
+            println!("Fila de ingresso ao sistema contem algum evento: inserindo evento dependente de requisicao de memoria ao sistema.");
 
             let mut job = control_module.remove_SEQ().unwrap();
 
@@ -404,7 +425,7 @@ impl Runnable for ExitSystem {
 
             control_module.add_event(0, "Requisicao de memoria de job".to_string(), Metadata::RequestMemory(job.clone()));
         } else {
-            println!("Fila de ingresso ao sistema nao contem nenhum evento.")
+            println!("Fila de ingresso ao sistema nao contem nenhum evento e fila de alocacao de memoria nao contem nenhum job.")
         }
     }
 }
