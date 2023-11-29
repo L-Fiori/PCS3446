@@ -36,6 +36,7 @@ pub fn event_loop (event_to_routine: &HashMap<&str, &str>, timestep: i32, contro
 
         // Generate event log
         // todo: create a better log interface and a real log file
+        println!("\n");
         println!("---------------------------");
         println!("\n");
         println!("Event name: {}", name);

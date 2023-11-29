@@ -71,7 +71,7 @@ impl JobArrival {
 
 impl Runnable for JobArrival {
     fn run(&self, control_module: &ControlModule) {
-        println!("JobArrival is running!");
+        println!("JobArrival esta rodando!");
 
         // Add the new job to the system entry queue
         let job_number = self.unwrap_metadata().0;
@@ -89,7 +89,7 @@ impl Runnable for JobArrival {
             control_module.add_SEQ(new_job.clone());
         }
 
-        println!("JobArrival finished running!");
+        println!("JobArrival terminou!");
     }
 }
 
@@ -108,7 +108,7 @@ impl JobEntrance {
 
 impl Runnable for JobEntrance {
     fn run(&self, control_module: &ControlModule) {
-        println!("JobEntrance is running!");
+        println!("JobEntrance esta rodando!");
 
         if let Some(mut job) = self.unwrap_metadata() {
 
@@ -120,6 +120,7 @@ impl Runnable for JobEntrance {
 
             control_module.add_event(0, "Requisicao de memoria de job".to_string(), Metadata::RequestMemory(job.clone()));
         }
+        println!("JobEntrance terminou!");
     }
 }
 
@@ -138,7 +139,8 @@ impl RequestMemory {
 
 impl Runnable for RequestMemory {
     fn run(&self, control_module: &ControlModule) {
-        println!("RequestMemory is running!");
+        println!("RequestMemory esta rodando!");
+        println!("\n");
         // Verifica inicialmente se há algum job na fila de
         // alocação de memória. Se não ocorrer, e houver área livre,
         // alocam-se para o job X a quantidade de memória solicitada,
@@ -148,9 +150,6 @@ impl Runnable for RequestMemory {
         // a aguardar na fila do processador. A seguir, é inserido o
         // evento dependente “Requisição de Processador Job X” para
         // tratamento imediato.
-        //
-        // FALTA IMPLEMENTAR: interacoes om a fila de alocacao
-        // de memoria, verificacao de area livre essas coisas.
     
         if let Some(mut job) = self.unwrap_metadata() {
             let num = job.memory_size;
@@ -171,6 +170,7 @@ impl Runnable for RequestMemory {
                 }
             }
         }
+        println!("RequestMemory terminou!");
     }
 }
 
@@ -189,7 +189,8 @@ impl RequestCPU {
 
 impl Runnable for RequestCPU {
     fn run(&self, control_module: &ControlModule) {
-        println!("RequestCPU is running!");
+        println!("RequestCPU esta rodando!");
+        println!("\n");
         // Insere o job X na fila de execução, para ser
         // devidamente processado (estado 4). Agora, o
         // job X passou a ser executado. Daí, insere-se o
@@ -213,6 +214,7 @@ impl Runnable for RequestCPU {
 
                 let state_end = current_timestep + time_slice;
                 println!("Fim do uso da cpu: {}", state_end);
+                println!("\n");
                 control_module.add_EQ(job.clone());
 
                 // Add the PauseJob event to be treated after job_cpu_time
@@ -240,6 +242,8 @@ impl Runnable for RequestCPU {
             }
             println!("EventList: {:?}", control_module.shared_state.get_event_list());
         }
+        println!("\n");
+        println!("RequestCPU terminou!");
     }
 }
 
@@ -259,7 +263,8 @@ impl PauseJob {
 
 impl Runnable for PauseJob {
     fn run(&self, control_module: &ControlModule) {
-        println!("PauseJob is running!");
+        println!("PauseJob esta rodando!");
+        println!("\n");
 
         if let Some(mut job) = self.unwrap_metadata() {
             let time_slice = 10;
@@ -292,6 +297,7 @@ impl Runnable for PauseJob {
                 println!("Fila de execucao: {:?}", control_module.shared_state.get_exec_queue());
                 let mut new_job = control_module.remove_EQ().unwrap();
                 println!("Fila de execucao apos remocao: {:?}", control_module.shared_state.get_exec_queue());
+                println!("\n");
                 control_module.add_CAQ(new_job);
 
                 println!("Fila de Alocacao de Processador: {:?}", control_module.shared_state.get_cpu_alloc_queue());
@@ -302,6 +308,8 @@ impl Runnable for PauseJob {
 
             }
         }
+        println!("\n");
+        println!("PauseJob terminou!");
     }
 }
 
@@ -321,7 +329,7 @@ impl EndProcess {
 
 impl Runnable for EndProcess {
     fn run(&self, control_module: &ControlModule) {
-        println!("EndProcess is running!");
+        println!("EndProcess esta rodando!");
         // se houver um job na fila de ingresso ao sistema,
         // ele deve ser retirado dessa fila. O tratamento
         // consiste em realizar três atividades de tratamento
@@ -335,6 +343,7 @@ impl Runnable for EndProcess {
             control_module.remove_EQ();
             control_module.add_event(0, "Liberacao de processador job".to_string(), Metadata::FreeCPU(job));
         }
+        println!("EndProcess terminou!");
     }
 }
 
@@ -353,13 +362,14 @@ impl FreeCPU {
 
 impl Runnable for FreeCPU {
     fn run(&self, control_module: &ControlModule) {
-        println!("FreeCPU is running!");
+        println!("FreeCPU esta rodando!");
 
         if let Some(mut job) = self.unwrap_metadata() {
             job.state = 5;
             control_module.remove_EQ();
             control_module.add_event(0, "Liberacao de memoria job".to_string(), Metadata::FreeMemory(job));
         }
+        println!("FreeCPU terminou!");
     }
 }
 
@@ -378,7 +388,7 @@ impl FreeMemory {
 
 impl Runnable for FreeMemory {
     fn run(&self, control_module: &ControlModule) {
-        println!("FreeMemory is running!");
+        println!("FreeMemory esta rodando!");
 
         if let Some(mut job) = self.unwrap_metadata() {
             job.state = 6;
@@ -386,6 +396,7 @@ impl Runnable for FreeMemory {
             control_module.dealloc_memory(job.clone());
             control_module.add_event(0, "Saida do sistema job".to_string(), Metadata::ExitSystem(job));
         }
+        println!("FreeMemory terminou!");
     }
 }
 
@@ -404,7 +415,7 @@ impl ExitSystem {
 
 impl Runnable for ExitSystem {
     fn run(&self, control_module: &ControlModule) {
-        println!("ExitSystem is running!");
+        println!("ExitSystem esta rodando!");
 
         if !control_module.maq_is_empty() {
             println!("Fila de alocacao de memoria contem algum job: inserindo evento dependente de requisicao de memoria ao sistema.");
@@ -427,6 +438,7 @@ impl Runnable for ExitSystem {
         } else {
             println!("Fila de ingresso ao sistema nao contem nenhum evento e fila de alocacao de memoria nao contem nenhum job.")
         }
+        println!("ExitSystem terminou!");
     }
 }
 

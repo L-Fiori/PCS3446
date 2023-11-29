@@ -1,4 +1,5 @@
 use crate::system_abstractions::{Job};
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum Metadata {
@@ -14,7 +15,6 @@ pub enum Metadata {
     DefaultRoutine,
 }
 
-#[derive(Debug)]
 pub struct Event {
     pub time: i32,
     pub name: String,
@@ -22,9 +22,33 @@ pub struct Event {
     pub next: Option<Box<Event>>,
 }
 
-#[derive(Debug)]
+impl fmt::Debug for Event {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Event {{ time: {}, name: \"{}\", metadata: {:?} }}",
+            self.time, self.name, self.metadata
+        )
+    }
+}
+
 pub struct EventList {
     head: Option<Box<Event>>,
+}
+
+impl fmt::Debug for EventList {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "EventList: [\n")?;
+        if let Some(head) = &self.head {
+            write!(f, "{:?}", head)?;
+            let mut current = &head.next;
+            while let Some(event) = current {
+                write!(f, ",\n{:?}", event)?;
+                current = &event.next;
+            }
+        }
+        write!(f, "\n]")
+    }
 }
 
 impl EventList {
